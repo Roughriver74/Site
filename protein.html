@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Полный гид по выбору протеина для похудения | 88кг → 80кг за 2-4 месяца</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* Advanced Gradients */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+        }
+        
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Animated Background Shapes */
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 15s infinite ease-in-out;
+        }
+        
+        .shape:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .shape:nth-child(2) {
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .shape:nth-child(3) {
+            bottom: 10%;
+            left: 50%;
+            animation-delay: 4s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+        
+        /* Advanced Cards */
+        .card-3d {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        
+        .card-3d:hover {
+            transform: translateY(-15px) rotateX(5deg) scale(1.02);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.25);
+        }
+        
+        /* Glowing Effect */
+        .glow-on-hover {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glow-on-hover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        
+        .glow-on-hover:hover::before {
+            left: 100%;
+        }
+        
+        /* Counter Animation */
+        .counter {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 1s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Pulse Animation */
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.1);
+            }
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Scroll Reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Typewriter Effect */
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid;
+            white-space: nowrap;
+            animation: typing 3s steps(40) 1s 1 normal both,
+                       blinking 0.75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        
+        @keyframes blinking {
+            50% { border-color: transparent; }
+        }
+        
+        /* Particle Background */
+        #particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        
+        /* Timeline connector */
+        .timeline-connector {
+            position: absolute;
+            left: 32px;
+            top: 80px;
+            bottom: -16px;
+            width: 4px;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            z-index: 100;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+        
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Badge Styles */
+        .badge-gold {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+        
+        .badge-silver {
+            background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
+            box-shadow: 0 4px 15px rgba(192, 192, 192, 0.4);
+        }
+        
+        .badge-bronze {
+            background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+            box-shadow: 0 4px 15px rgba(205, 127, 50, 0.4);
+        }
+        
+        /* Comparison Toggle */
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #e5e7eb;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #667eea;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        /* Interactive Calculator */
+        .calculator-input {
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .calculator-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Animated Gradient Button */
+        .gradient-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Sticky Header */
+        .sticky-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 999;
+            transform: translateY(-100%);
+            transition: transform 0.3s;
+        }
+        
+        .sticky-header.visible {
+            transform: translateY(0);
+        }
+        
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Sticky Header -->
+    <div class="sticky-header" id="stickyHeader">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="font-bold text-xl">🎯 Гид по протеину</div>
+            <div class="flex gap-4">
+                <a href="#recommendations" class="px-6 py-2 bg-purple-600 text-white rounded-full font-semibold hover:bg-purple-700 transition">
+                    Купить
+                </a>
+                <button onclick="openCalculator()" class="px-6 py-2 border-2 border-purple-600 text-purple-600 rounded-full font-semibold hover:bg-purple-50 transition">
+                    Калькулятор
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="gradient-bg text-white py-20 px-4 relative">
+        <canvas id="particles"></canvas>
+        <div class="floating-shapes">
+            <div class="shape w-20 h-20 bg-white rounded-full"></div>
+            <div class="shape w-32 h-32 bg-white rounded-full"></div>
+            <div class="shape w-16 h-16 bg-white rounded-full"></div>
+        </div>
+        
+        <div class="max-w-6xl mx-auto text-center relative z-10">
+            <div class="inline-block bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 mb-6 animate__animated animate__fadeInDown">
+                <span class="text-sm font-semibold">🎯 Научно обоснованный подход</span>
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight animate__animated animate__fadeInUp">
+                Полный гид по выбору<br/>протеина для похудения
+            </h1>
+            <div class="text-xl md:text-2xl mb-4 text-white/90 animate__animated animate__fadeInUp animate__delay-1s">
+                <span class="counter" data-target="88">0</span> кг → 
+                <span class="counter" data-target="80">0</span>-<span class="counter" data-target="81">0</span> кг за 
+                <span class="counter" data-target="2">0</span>-<span class="counter" data-target="4">0</span> месяца
+            </div>
+            <p class="text-lg mb-8 text-white/80 max-w-3xl mx-auto animate__animated animate__fadeInUp animate__delay-2s">
+                Персонализированное исследование для человека с непереносимостью лактозы и бюджетом 5000₽/месяц
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center animate__animated animate__fadeInUp animate__delay-3s">
+                <a href="#recommendations" class="glow-on-hover bg-white text-purple-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition shadow-xl">
+                    🛒 Посмотреть рекомендации
+                </a>
+                <button onclick="openCalculator()" class="glow-on-hover bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/20 transition">
+                    🧮 Калькулятор белка
+                </button>
+            </div>
+            
+            <!-- Animated Stats -->
+            <div class="grid grid-cols-3 gap-4 mt-12 max-w-3xl mx-auto">
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 reveal pulse-ring">
+                    <div class="text-3xl font-bold counter" data-target="132">0</div>
+                    <div class="text-sm text-white/80">Белка в день (г)</div>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-fill" data-progress="80"></div>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 reveal pulse-ring" style="animation-delay: 0.2s">
+                    <div class="text-3xl font-bold"><span class="counter" data-target="2">0</span>-<span class="counter" data-target="4">0</span></div>
+                    <div class="text-sm text-white/80">Месяцев до цели</div>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-fill" data-progress="60"></div>
+                    </div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 reveal pulse-ring" style="animation-delay: 0.4s">
+                    <div class="text-3xl font-bold">≤<span class="counter" data-target="5000">0</span></div>
+                    <div class="text-sm text-white/80">Бюджет/месяц (₽)</div>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-fill" data-progress="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problem & Solution -->
+    <div class="py-16 px-4 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="reveal">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-900">❌ Ваша ситуация</h2>
+                    <ul class="space-y-4">
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-red-500 font-bold mr-3 text-xl">•</span>
+                            <span class="text-lg text-gray-700">Вес 88 кг, рост 181 см - хочется убрать живот</span>
+                        </li>
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-red-500 font-bold mr-3 text-xl">•</span>
+                            <span class="text-lg text-gray-700">Нестабильное питание - часто хочется есть</span>
+                        </li>
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-red-500 font-bold mr-3 text-xl">•</span>
+                            <span class="text-lg text-gray-700">Непереносимость лактозы + арахис вызывает вздутие</span>
+                        </li>
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-red-500 font-bold mr-3 text-xl">•</span>
+                            <span class="text-lg text-gray-700">Не занимаетесь в зале, но ходите 10 000+ шагов</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="reveal" style="transition-delay: 0.2s">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-900">✅ Решение</h2>
+                    <ul class="space-y-4">
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-green-500 font-bold mr-3 text-xl">✓</span>
+                            <span class="text-lg text-gray-700"><strong>Яичный протеин</strong> - максимальная сытость 3-4 часа</span>
+                        </li>
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-green-500 font-bold mr-3 text-xl">✓</span>
+                            <span class="text-lg text-gray-700"><strong>100% без лактозы</strong> - никакого дискомфорта</span>
+                        </li>
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-green-500 font-bold mr-3 text-xl">✓</span>
+                            <span class="text-lg text-gray-700"><strong>Замена завтрака и перекуса</strong> - контроль калорий</span>
+                        </li>
+                        <li class="flex items-start transform transition hover:translate-x-2">
+                            <span class="text-green-500 font-bold mr-3 text-xl">✓</span>
+                            <span class="text-lg text-gray-700"><strong>Сохранение мышц</strong> - подтянутое тело, не дряблое</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Science Section with Tabs -->
+    <div id="science" class="py-16 px-4 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 reveal">
+                <h2 class="text-4xl font-bold mb-4">🧬 Почему это работает: 3 научных механизма</h2>
+                <p class="text-xl text-gray-600">Подтверждено исследованиями</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-2xl p-8 shadow-lg card-3d reveal">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Контроль голода</h3>
+                    <p class="text-gray-700 mb-4">Белок снижает гормон голода (грелин) на <strong class="tooltip" data-tooltip="Подтверждено 15+ исследованиями">50-65%</strong></p>
+                    <div class="bg-green-100 rounded-lg p-4">
+                        <p class="text-sm font-semibold text-green-800">Результат: -<span class="counter" data-target="400">0</span>-<span class="counter" data-target="500">0</span> ккал в день</p>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill" data-progress="65"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-8 shadow-lg card-3d reveal" style="transition-delay: 0.2s">
+                    <div class="text-5xl mb-4">🔥</div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Ускорение метаболизма</h3>
+                    <p class="text-gray-700 mb-4">Термический эффект белка <strong class="tooltip" data-tooltip="В 3-6 раз выше углеводов">20-30%</strong></p>
+                    <div class="bg-orange-100 rounded-lg p-4">
+                        <p class="text-sm font-semibold text-orange-800">Результат: +<span class="counter" data-target="50">0</span>-<span class="counter" data-target="100">0</span> ккал сжигается</p>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill" data-progress="30"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-8 shadow-lg card-3d reveal" style="transition-delay: 0.4s">
+                    <div class="text-5xl mb-4">💪</div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">Сохранение мышц</h3>
+                    <p class="text-gray-700 mb-4">Высокобелковая диета сохраняет <strong class="tooltip" data-tooltip="vs 75% при обычной диете"><span class="counter" data-target="96">0</span>% мышц</strong></p>
+                    <div class="bg-purple-100 rounded-lg p-4">
+                        <p class="text-sm font-semibold text-purple-800">Результат: подтянутое тело</p>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill" data-progress="96"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Comparison Table -->
+    <div class="py-16 px-4 bg-white">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 reveal">
+                <h2 class="text-4xl font-bold mb-4">🔬 Интерактивное сравнение протеинов</h2>
+                <p class="text-xl text-gray-600 mb-6">Нажмите на строки для подробностей</p>
+                
+                <!-- Filter Buttons -->
+                <div class="flex flex-wrap justify-center gap-4 mb-8">
+                    <button onclick="filterTable('all')" class="filter-btn active px-6 py-2 rounded-full font-semibold transition">
+                        Все типы
+                    </button>
+                    <button onclick="filterTable('lactose-free')" class="filter-btn px-6 py-2 rounded-full font-semibold transition">
+                        Без лактозы
+                    </button>
+                    <button onclick="filterTable('best-satiety')" class="filter-btn px-6 py-2 rounded-full font-semibold transition">
+                        Максимальная сытость
+                    </button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto reveal">
+                <table class="w-full bg-white rounded-xl shadow-lg overflow-hidden" id="comparisonTable">
+                    <thead class="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                        <tr>
+                            <th class="px-6 py-4 text-left">Характеристика</th>
+                            <th class="px-6 py-4 text-center cursor-pointer hover:bg-purple-700 transition" onclick="highlightColumn(1)">
+                                Изолят сыворотки
+                            </th>
+                            <th class="px-6 py-4 text-center bg-yellow-500 text-gray-900 cursor-pointer" onclick="highlightColumn(2)">
+                                ⭐ Яичный протеин
+                            </th>
+                            <th class="px-6 py-4 text-center cursor-pointer hover:bg-purple-700 transition" onclick="highlightColumn(3)">
+                                Говяжий
+                            </th>
+                            <th class="px-6 py-4 text-center cursor-pointer hover:bg-purple-700 transition" onclick="highlightColumn(4)">
+                                Гороховый
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="showDetailModal('lactose')">
+                            <td class="px-6 py-4 font-semibold">Лактоза</td>
+                            <td class="px-6 py-4 text-center">⚠️ <1%</td>
+                            <td class="px-6 py-4 text-center bg-yellow-50">✅ 0%</td>
+                            <td class="px-6 py-4 text-center">✅ 0%</td>
+                            <td class="px-6 py-4 text-center">✅ 0%</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="showDetailModal('absorption')">
+                            <td class="px-6 py-4 font-semibold">Скорость усвоения</td>
+                            <td class="px-6 py-4 text-center">30-60 мин</td>
+                            <td class="px-6 py-4 text-center bg-yellow-50">✅ 2-4 часа</td>
+                            <td class="px-6 py-4 text-center">1-2 часа</td>
+                            <td class="px-6 py-4 text-center">2-3 часа</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="showDetailModal('satiety')">
+                            <td class="px-6 py-4 font-semibold">Сытость</td>
+                            <td class="px-6 py-4 text-center">⭐⭐</td>
+                            <td class="px-6 py-4 text-center bg-yellow-50">✅ ⭐⭐⭐⭐⭐</td>
+                            <td class="px-6 py-4 text-center">⭐⭐⭐</td>
+                            <td class="px-6 py-4 text-center">⭐⭐⭐⭐</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Recommendations with Animation -->
+    <div id="recommendations" class="py-16 px-4 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 reveal">
+                <h2 class="text-4xl font-bold mb-4">🛒 Топ рекомендации</h2>
+                <p class="text-xl text-gray-600">Проверено отзывами, в рамках бюджета</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Product 1 -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-3d reveal relative">
+                    <div class="badge-gold text-white text-center py-2 font-bold">
+                        🥇 ПРЕМЬЕР-ВЫБОР
+                    </div>
+                    <div class="p-8">
+                        <div class="text-6xl mb-4 text-center animate__animated animate__bounceIn">🥚</div>
+                        <h3 class="text-2xl font-bold mb-2 text-center">Primekraft EGG Protein</h3>
+                        <p class="text-gray-600 text-center mb-4">Яичный протеин</p>
+                        
+                        <div class="bg-green-50 rounded-lg p-4 mb-4">
+                            <div class="text-3xl font-bold text-green-700 text-center counter" data-target="24">0</div>
+                            <div class="text-sm text-gray-600 text-center">г белка на порцию</div>
+                        </div>
+                        
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>100% без лактозы</span>
+                            </li>
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Сытость 3-4 часа</span>
+                            </li>
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>4.7/5 ⭐ (2608 отзывов)</span>
+                            </li>
+                        </ul>
+                        
+                        <div class="border-t pt-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600">Цена за порцию:</span>
+                                <span class="font-bold text-lg"><span class="counter" data-target="78">0</span>₽</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-gray-600">В месяц (2 порции):</span>
+                                <span class="font-bold text-xl text-green-600"><span class="counter" data-target="4680">0</span>₽</span>
+                            </div>
+                            <button onclick="addToCart('primekraft')" class="gradient-button w-full text-white text-center py-3 rounded-lg font-bold transition transform hover:scale-105">
+                                🛒 Добавить в корзину
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-3d reveal relative" style="transition-delay: 0.2s">
+                    <div class="badge-silver text-white text-center py-2 font-bold">
+                        🥈 ВЫГОДНАЯ АЛЬТЕРНАТИВА
+                    </div>
+                    <div class="p-8">
+                        <div class="text-6xl mb-4 text-center animate__animated animate__bounceIn">🥩</div>
+                        <h3 class="text-2xl font-bold mb-2 text-center">Atletic Food Beef</h3>
+                        <p class="text-gray-600 text-center mb-4">Говяжий протеин</p>
+                        
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <div class="text-3xl font-bold text-blue-700 text-center counter" data-target="25">0</div>
+                            <div class="text-sm text-gray-600 text-center">г белка на порцию</div>
+                        </div>
+                        
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>100% без лактозы</span>
+                            </li>
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Самая низкая цена</span>
+                            </li>
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>4.7/5 ⭐ (787 отзывов)</span>
+                            </li>
+                        </ul>
+                        
+                        <div class="border-t pt-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600">Цена за порцию:</span>
+                                <span class="font-bold text-lg"><span class="counter" data-target="67">0</span>₽</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-gray-600">В месяц (2 порции):</span>
+                                <span class="font-bold text-xl text-green-600"><span class="counter" data-target="4020">0</span>₽</span>
+                            </div>
+                            <button onclick="addToCart('atletic')" class="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white text-center py-3 rounded-lg font-bold transition transform hover:scale-105">
+                                🛒 Добавить в корзину
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-3d reveal relative" style="transition-delay: 0.4s">
+                    <div class="badge-bronze text-white text-center py-2 font-bold">
+                        🥉 ПРЕМИУМ ИЗОЛЯТ
+                    </div>
+                    <div class="p-8">
+                        <div class="text-6xl mb-4 text-center animate__animated animate__bounceIn">🥛</div>
+                        <h3 class="text-2xl font-bold mb-2 text-center">BioTech Iso Whey Zero</h3>
+                        <p class="text-gray-600 text-center mb-4">Изолят сыворотки</p>
+                        
+                        <div class="bg-purple-50 rounded-lg p-4 mb-4">
+                            <div class="text-3xl font-bold text-purple-700 text-center counter" data-target="21">0</div>
+                            <div class="text-sm text-gray-600 text-center">г белка на порцию</div>
+                        </div>
+                        
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-yellow-500 mr-2">⚠️</span>
+                                <span><1% лактозы (следы)</span>
+                            </li>
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Отличная растворимость</span>
+                            </li>
+                            <li class="flex items-start text-sm transform transition hover:translate-x-2">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Много вкусов</span>
+                            </li>
+                        </ul>
+                        
+                        <div class="border-t pt-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600">Цена за порцию:</span>
+                                <span class="font-bold text-lg"><span class="counter" data-target="83">0</span>₽</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-gray-600">В месяц (2 порции):</span>
+                                <span class="font-bold text-xl text-green-600"><span class="counter" data-target="4980">0</span>₽</span>
+                            </div>
+                            <button onclick="addToCart('biotech')" class="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white text-center py-3 rounded-lg font-bold transition transform hover:scale-105">
+                                🛒 Добавить в корзину
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Timeline -->
+    <div class="py-16 px-4 bg-gradient-to-br from-purple-50 to-pink-50">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 reveal">
+                <h2 class="text-4xl font-bold mb-4">⏰ Интерактивный график результатов</h2>
+                <p class="text-xl text-gray-600">Нажмите на этапы для подробностей</p>
+            </div>
+            
+            <div class="relative space-y-6">
+                <div class="timeline-connector hidden md:block"></div>
+                
+                <div class="bg-white rounded-2xl p-6 shadow-lg flex items-center reveal cursor-pointer hover:shadow-2xl transition" onclick="showTimelineDetail(1)">
+                    <div class="bg-blue-100 text-blue-700 rounded-full w-16 h-16 flex items-center justify-center font-bold text-lg mr-6 flex-shrink-0 relative z-10">
+                        1-2
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold mb-2">Неделя 1-2: Адаптация</h3>
+                        <p class="text-gray-700">Начальная потеря воды, снижение вздутия</p>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill" data-progress="15"></div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-2xl font-bold text-green-600">-<span class="counter" data-target="1">0</span>-<span class="counter" data-target="2">0</span> кг</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-6 shadow-lg flex items-center reveal cursor-pointer hover:shadow-2xl transition" onclick="showTimelineDetail(2)" style="transition-delay: 0.2s">
+                    <div class="bg-green-100 text-green-700 rounded-full w-16 h-16 flex items-center justify-center font-bold text-lg mr-6 flex-shrink-0 relative z-10">
+                        3-4
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold mb-2">Неделя 3-4: Заметные изменения</h3>
+                        <p class="text-gray-700">Снижение аппетита, одежда лучше сидит</p>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill" data-progress="35"></div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-2xl font-bold text-green-600">-0.5-1 кг/нед</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-6 shadow-lg flex items-center reveal cursor-pointer hover:shadow-2xl transition" onclick="showTimelineDetail(3)" style="transition-delay: 0.4s">
+                    <div class="bg-yellow-100 text-yellow-700 rounded-full w-16 h-16 flex items-center justify-center font-bold text-lg mr-6 flex-shrink-0 relative z-10">
+                        5-8
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold mb-2">Неделя 5-8: Видимый прогресс</h3>
+                        <p class="text-gray-700">Живот подтягивается, окружающие замечают</p>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill" data-progress="65"></div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-2xl font-bold text-green-600">-<span class="counter" data-target="2">0</span>-<span class="counter" data-target="4">0</span> кг</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-6 shadow-lg flex items-center border-4 border-green-400 reveal cursor-pointer hover:shadow-2xl transition" onclick="showTimelineDetail(4)" style="transition-delay: 0.6s">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-lg mr-6 flex-shrink-0 relative z-10">
+                        9-16
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold mb-2">🎯 Неделя 9-16: ЦЕЛЬ ДОСТИГНУТА!</h3>
+                        <p class="text-gray-700">Живот не болтается, подтянутое тело</p>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill" data-progress="100"></div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-3xl font-bold text-green-600">✅ <span class="counter" data-target="80">0</span>-<span class="counter" data-target="81">0</span> кг</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator Modal -->
+    <div id="calculatorModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">🧮 Калькулятор белка</h2>
+                <button onclick="closeCalculator()" class="text-gray-500 hover:text-gray-700 text-3xl">×</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block font-semibold mb-2">Ваш вес (кг):</label>
+                    <input type="number" id="weightInput" class="calculator-input w-full" value="88" oninput="calculateProtein()">
+                </div>
+                
+                <div>
+                    <label class="block font-semibold mb-2">Уровень активности:</label>
+                    <select id="activityInput" class="calculator-input w-full" onchange="calculateProtein()">
+                        <option value="1.5">Умеренная (10 000+ шагов)</option>
+                        <option value="1.8">Активная (тренировки 3-4 раза)</option>
+                        <option value="2.0">Очень активная (ежедневные тренировки)</option>
+                    </select>
+                </div>
+                
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 mt-6">
+                    <h3 class="text-xl font-bold mb-4">Ваша норма белка:</h3>
+                    <div class="text-4xl font-bold text-purple-700 mb-2">
+                        <span id="proteinResult">132</span> г/день
+                    </div>
+                    <p class="text-gray-600">Это <span id="servingsResult">2</span> порции протеина в день</p>
+                    
+                    <div class="grid grid-cols-3 gap-2 mt-4">
+                        <div class="bg-white rounded-lg p-3 text-center">
+                            <div class="text-sm text-gray-600">Еда</div>
+                            <div class="font-bold text-lg"><span id="foodProtein">90</span>г</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 text-center">
+                            <div class="text-sm text-gray-600">Добавка</div>
+                            <div class="font-bold text-lg"><span id="supplementProtein">50</span>г</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-3 text-center">
+                            <div class="text-sm text-gray-600">Месяц</div>
+                            <div class="font-bold text-lg"><span id="monthlyCost">4680</span>₽</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="closeCalculator()" class="w-full gradient-button text-white py-3 rounded-lg font-bold mt-4">
+                    Готово
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modals -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold" id="modalTitle">Детали</h2>
+                <button onclick="closeDetailModal()" class="text-gray-500 hover:text-gray-700 text-3xl">×</button>
+            </div>
+            <div id="modalContent" class="text-gray-700"></div>
+            <button onclick="closeDetailModal()" class="w-full bg-purple-600 text-white py-3 rounded-lg font-bold mt-6">
+                Закрыть
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Notification -->
+    <div id="cartNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl transform translate-x-full transition-transform z-50">
+        <div class="flex items-center">
+            <span class="text-2xl mr-3">✅</span>
+            <span class="font-semibold">Добавлено в корзину!</span>
+        </div>
+    </div>
+
+    <!-- Final CTA -->
+    <div class="gradient-bg text-white py-20 px-4 relative overflow-hidden">
+        <canvas id="particlesCTA"></canvas>
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6 animate__animated animate__pulse animate__infinite">
+                🎯 Готовы начать трансформацию?
+            </h2>
+            <p class="text-xl mb-8 text-white/90">Всё что нужно - купить протеин и начать завтра утром</p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <div class="text-3xl mb-2">✅</div>
+                    <div class="text-sm">Protеин</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <div class="text-3xl mb-2">✅</div>
+                    <div class="text-sm">Овсянка</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <div class="text-3xl mb-2">✅</div>
+                    <div class="text-sm">Бананы</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <div class="text-3xl mb-2">✅</div>
+                    <div class="text-sm">Вода 2.5л</div>
+                </div>
+            </div>
+            
+            <button onclick="celebrateStart()" class="glow-on-hover bg-white text-purple-700 px-12 py-5 rounded-full font-bold text-xl hover:bg-gray-100 transition shadow-xl transform hover:scale-105">
+                🚀 Начать прямо сейчас!
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-gray-900 text-white py-12 px-4">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gray-400 mb-4">
+                Персонализированное исследование • Научный подход • Российский рынок 2025
+            </p>
+            <p class="text-sm text-gray-500">
+                Проконсультируйтесь с врачом перед началом программы
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Counter Animation
+        function animateCounter(element) {
+            const target = parseInt(element.getAttribute('data-target'));
+            const duration = 2000;
+            const step = target / (duration / 16);
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 16);
+        }
+
+        // Progress Bar Animation
+        function animateProgressBars() {
+            document.querySelectorAll('.progress-fill').forEach(bar => {
+                const progress = bar.getAttribute('data-progress');
+                bar.style.width = progress + '%';
+            });
+        }
+
+        // Scroll Reveal
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll('.reveal');
+            reveals.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('active');
+                }
+            });
+        }
+
+        // Sticky Header
+        function handleStickyHeader() {
+            const header = document.getElementById('stickyHeader');
+            if (window.scrollY > 300) {
+                header.classList.add('visible');
+            } else {
+                header.classList.remove('visible');
+            }
+        }
+
+        // Particles.js simple implementation
+        function initParticles(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const particles = [];
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 2 + 1
+                });
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                
+                particles.forEach(particle => {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
+                    if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+                    
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+
+        // Calculator Functions
+        function openCalculator() {
+            document.getElementById('calculatorModal').classList.add('active');
+            calculateProtein();
+        }
+
+        function closeCalculator() {
+            document.getElementById('calculatorModal').classList.remove('active');
+        }
+
+        function calculateProtein() {
+            const weight = parseFloat(document.getElementById('weightInput').value) || 88;
+            const activity = parseFloat(document.getElementById('activityInput').value) || 1.5;
+            
+            const proteinNeeded = Math.round(weight * activity);
+            const servings = Math.ceil(proteinNeeded / 70);
+            const proteinFromFood = Math.round(proteinNeeded * 0.65);
+            const proteinFromSupplement = proteinNeeded - proteinFromFood;
+            const monthlyCost = servings * 78 * 30;
+            
+            document.getElementById('proteinResult').textContent = proteinNeeded;
+            document.getElementById('servingsResult').textContent = servings;
+            document.getElementById('foodProtein').textContent = proteinFromFood;
+            document.getElementById('supplementProtein').textContent = proteinFromSupplement;
+            document.getElementById('monthlyCost').textContent = monthlyCost;
+        }
+
+        // Detail Modal Functions
+        function showDetailModal(type) {
+            const modal = document.getElementById('detailModal');
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+            
+            const details = {
+                'lactose': {
+                    title: '💊 Лактоза в протеинах',
+                    content: '<p class="mb-4"><strong>Яичный и говяжий протеины</strong> на 100% свободны от лактозы, что делает их идеальными для людей с непереносимостью.</p><p class="mb-4"><strong>Изолят сыворотки</strong> содержит менее 1% лактозы благодаря глубокой фильтрации. Большинство людей с непереносимостью переносят такое количество.</p><p><strong>Растительные протеины</strong> полностью безлактозны и гипоаллергенны.</p>'
+                },
+                'absorption': {
+                    title: '⏱️ Скорость усвоения',
+                    content: '<p class="mb-4"><strong>Быстрое усвоение (30-60 мин):</strong> Изолят сыворотки - идеален после тренировки.</p><p class="mb-4"><strong>Среднее усвоение (2-4 часа):</strong> Яичный протеин - лучший для длительной сытости и замены приёмов пищи.</p><p><strong>Медленное усвоение:</strong> Казеин (не рассматривался из-за лактозы).</p>'
+                },
+                'satiety': {
+                    title: '😊 Чувство сытости',
+                    content: '<p class="mb-4"><strong>Максимальная сытость:</strong> Яичный протеин благодаря медленному усвоению держит сытым 3-4 часа.</p><p class="mb-4"><strong>Средняя сытость:</strong> Говяжий и растительные протеины.</p><p><strong>Минимальная сытость:</strong> Изоляты сыворотки из-за быстрого усвоения.</p>'
+                }
+            };
+            
+            if (details[type]) {
+                title.textContent = details[type].title;
+                content.innerHTML = details[type].content;
+                modal.classList.add('active');
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        function showTimelineDetail(week) {
+            const details = {
+                1: {
+                    title: '📅 Недели 1-2: Адаптация',
+                    content: '<p class="mb-4"><strong>Что происходит:</strong></p><ul class="list-disc pl-6 space-y-2 mb-4"><li>Организм привыкает к высокому белку</li><li>Начальная потеря воды (1-2 кг)</li><li>Снижение вздутия</li><li>Стабилизация аппетита</li></ul><p class="font-semibold text-green-600">Ожидаемая потеря: 1-2 кг</p>'
+                },
+                2: {
+                    title: '📅 Недели 3-4: Заметные изменения',
+                    content: '<p class="mb-4"><strong>Что происходит:</strong></p><ul class="list-disc pl-6 space-y-2 mb-4"><li>Значительное снижение голода</li><li>Одежда лучше сидит</li><li>Больше энергии</li><li>Стабильная потеря веса</li></ul><p class="font-semibold text-green-600">Ожидаемая потеря: 0.5-1 кг/неделю</p>'
+                },
+                3: {
+                    title: '📅 Недели 5-8: Видимый прогресс',
+                    content: '<p class="mb-4"><strong>Что происходит:</strong></p><ul class="list-disc pl-6 space-y-2 mb-4"><li>Живот подтягивается</li><li>Окружающие замечают изменения</li><li>Улучшение композиции тела</li><li>Формирование привычки</li></ul><p class="font-semibold text-green-600">Ожидаемая потеря: 2-4 кг за период</p>'
+                },
+                4: {
+                    title: '🎯 Недели 9-16: ЦЕЛЬ ДОСТИГНУТА!',
+                    content: '<p class="mb-4"><strong>Результат:</strong></p><ul class="list-disc pl-6 space-y-2 mb-4"><li>Вес 80-81 кг ✅</li><li>Подтянутый живот</li><li>Стабильный аппетит</li><li>Здоровые привычки сформированы</li></ul><p class="font-semibold text-green-600 text-xl">Поздравляем! 🎉</p>'
+                }
+            };
+            
+            if (details[week]) {
+                const title = document.getElementById('modalTitle');
+                const content = document.getElementById('modalContent');
+                title.textContent = details[week].title;
+                content.innerHTML = details[week].content;
+                document.getElementById('detailModal').classList.add('active');
+            }
+        }
+
+        // Filter Table
+        function filterTable(filter) {
+            // Update button styles
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-purple-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            event.target.classList.add('active', 'bg-purple-600', 'text-white');
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            
+            // Animate table (simple implementation)
+            const table = document.getElementById('comparisonTable');
+            table.style.opacity = '0.5';
+            setTimeout(() => {
+                table.style.opacity = '1';
+            }, 300);
+        }
+
+        // Highlight Column
+        function highlightColumn(colIndex) {
+            const table = document.getElementById('comparisonTable');
+            const cells = table.querySelectorAll(`td:nth-child(${colIndex + 1}), th:nth-child(${colIndex + 1})`);
+            
+            // Remove previous highlights
+            table.querySelectorAll('td, th').forEach(cell => {
+                cell.classList.remove('bg-blue-100');
+            });
+            
+            // Add new highlights
+            cells.forEach(cell => {
+                cell.classList.add('bg-blue-100');
+            });
+        }
+
+        // Add to Cart
+        function addToCart(product) {
+            const notification = document.getElementById('cartNotification');
+            notification.style.transform = 'translateX(0)';
+            
+            // Confetti effect
+            createConfetti();
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(150%)';
+            }, 3000);
+        }
+
+        // Confetti Effect
+        function createConfetti() {
+            const colors = ['#667eea', '#764ba2', '#FFD700', '#FFA500', '#FF69B4'];
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.3 + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        // Celebrate Start
+        function celebrateStart() {
+            createConfetti();
+            alert('🎉 Отличное решение! Заказывайте протеин и начинайте завтра утром!');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            // Animate counters
+            document.querySelectorAll('.counter').forEach(counter => {
+                animateCounter(counter);
+            });
+            
+            // Animate progress bars
+            setTimeout(animateProgressBars, 500);
+            
+            // Initialize particles
+            initParticles('particles');
+            initParticles('particlesCTA');
+            
+            // Reveal elements
+            revealOnScroll();
+        });
+
+        // Scroll events
+        window.addEventListener('scroll', () => {
+            revealOnScroll();
+            handleStickyHeader();
+        });
+
+        // Close modals on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
