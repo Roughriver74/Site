@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nogame - Решение для ритейла и полевых продаж</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary-color: #16a34a;
+            --secondary-color: #22c55e;
+            --accent-color: #4ade80;
+            --dark-bg: #052e16;
+            --medium-bg: #14532d;
+            --light-bg: #166534;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--medium-bg) 50%, var(--light-bg) 100%);
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .presentation-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .slide {
+            background: linear-gradient(to bottom right, #ffffff 0%, #f0fdf4 100%);
+            border-radius: 24px;
+            box-shadow: 0 30px 90px rgba(22, 163, 74, 0.3), 0 0 1px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            padding: 60px;
+            min-height: 700px;
+            display: none;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 50%, var(--accent-color) 100%);
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide h1 {
+            color: #1a1a2e;
+            font-size: 3.5em;
+            font-weight: 800;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            position: relative;
+            padding-bottom: 25px;
+        }
+
+        .slide h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 3px;
+        }
+
+        .slide h2 {
+            color: #14532d;
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 25px;
+            margin-top: 40px;
+            letter-spacing: -0.01em;
+        }
+
+        .slide h3 {
+            color: var(--secondary-color);
+            font-size: 1.6em;
+            font-weight: 600;
+            margin-bottom: 18px;
+            margin-top: 30px;
+        }
+
+        .slide p {
+            font-size: 1.15em;
+            margin-bottom: 18px;
+            text-align: left;
+            color: #166534;
+            font-weight: 400;
+            line-height: 1.8;
+        }
+
+        .slide ul, .slide ol {
+            margin-left: 30px;
+            margin-bottom: 25px;
+        }
+
+        .slide li {
+            font-size: 1.15em;
+            margin-bottom: 12px;
+            color: #166534;
+            line-height: 1.7;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, rgba(22, 163, 74, 0.08) 0%, rgba(34, 197, 94, 0.08) 100%);
+            border: 2px solid rgba(22, 163, 74, 0.25);
+            padding: 30px;
+            border-radius: 16px;
+            margin: 30px 0;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(22, 163, 74, 0.15);
+        }
+
+        .highlight::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 16px 0 0 16px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid #bbf7d0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 0;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feature-card:hover::before {
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(22, 163, 74, 0.2);
+            border-color: var(--secondary-color);
+        }
+
+        .feature-card h4 {
+            color: #14532d;
+            margin-bottom: 18px;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            text-align: center;
+            transform: scale(1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(22, 163, 74, 0.3);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 60px rgba(22, 163, 74, 0.4);
+        }
+
+        .stat-number {
+            font-size: 3.5em;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 18px 40px;
+            border-radius: 60px;
+            box-shadow: 0 20px 60px rgba(22, 163, 74, 0.3);
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .nav-button {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            margin: 0 8px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
+        }
+
+        .nav-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(22, 163, 74, 0.5);
+        }
+
+        .nav-button:disabled {
+            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .slide-counter {
+            display: inline-block;
+            margin: 0 25px;
+            font-weight: 700;
+            color: #14532d;
+            font-size: 1.1em;
+        }
+
+        .roi-section {
+            background: linear-gradient(135deg, #10b981 0%, #22c55e 100%);
+            color: white;
+            padding: 45px;
+            border-radius: 20px;
+            margin: 40px 0;
+            box-shadow: 0 15px 50px rgba(16, 185, 129, 0.3);
+        }
+
+        .roi-section h3 {
+            color: white;
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 1.8em;
+        }
+
+        .contact-info {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--medium-bg) 100%);
+            color: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            margin: 40px 0;
+            box-shadow: 0 15px 50px rgba(22, 163, 74, 0.3);
+        }
+
+        .contact-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 30px 20px;
+                min-height: 600px;
+            }
+            .slide h1 {
+                font-size: 2.5em;
+            }
+            .feature-grid, .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- Слайд 1: Титульный -->
+        <div class="slide active">
+            <h1>Nogame</h1>
+            <h2 style="text-align: center; color: var(--secondary-color); margin-top: 40px;">Рост продаж через эффективное управление полевой командой</h2>
+
+            <div class="highlight" style="margin-top: 60px;">
+                <h3 style="color: var(--primary-color); text-align: center;">Увеличьте продажи на 45%</h3>
+                <p style="text-align: center; font-size: 1.3em; margin-top: 20px;">
+                    Nogame - платформа для управления торговыми представителями, мерчендайзерами и полевыми агентами
+                </p>
+            </div>
+
+            <div class="stats-grid" style="margin-top: 60px;">
+                <div class="stat-item">
+                    <div class="stat-number">45%</div>
+                    <div class="stat-label">Рост продаж</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">60%</div>
+                    <div class="stat-label">Больше визитов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Контроль точек</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 2: Проблема -->
+        <div class="slide">
+            <h1>Проблемы полевых продаж</h1>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📍 Нет контроля визитов</h4>
+                    <p>Невозможно проверить, был ли торговый представитель в точке продаж</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📋 Бумажные отчеты</h4>
+                    <p>Представители тратят часы на заполнение отчетов вместо продаж</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📸 Нет фиксации выкладки</h4>
+                    <p>Невозможно проверить качество мерчендайзинга в точках</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Отсутствие аналитики</h4>
+                    <p>Нет данных для анализа эффективности работы торговых представителей</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎯 Низкий охват</h4>
+                    <p>Представители посещают меньше точек из-за плохого планирования</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💬 Потеря информации</h4>
+                    <p>Обратная связь от клиентов теряется по пути к руководству</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 3: Решение -->
+        <div class="slide">
+            <h1>Nogame - Прирост продаж</h1>
+
+            <div class="highlight">
+                <h3>Полный контроль полевых продаж</h3>
+                <p>Управляйте торговыми представителями, отслеживайте визиты, анализируйте результаты</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>✅ Чек-ины в точках</h4>
+                    <p>Автоматическая фиксация посещений с GPS и временем визита</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📸 Фотоотчеты</h4>
+                    <p>Фото выкладки, промо-материалов, конкурентов прямо из приложения</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📝 Цифровые анкеты</h4>
+                    <p>Быстрое заполнение форм и отчетов в мобильном приложении</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🗓️ Планирование визитов</h4>
+                    <p>Автоматическое составление расписания с учетом географии</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Дашборды продаж</h4>
+                    <p>Анализ KPI, конверсии, эффективности каждого представителя</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔗 Интеграция с CRM</h4>
+                    <p>Синхронизация данных с вашей системой управления продажами</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 4: ROI -->
+        <div class="slide">
+            <h1>Результаты внедрения</h1>
+
+            <div class="roi-section">
+                <h3>Измеримый рост бизнес-показателей</h3>
+                <ul style="font-size: 1.2em; line-height: 2;">
+                    <li>📈 Увеличение объема продаж на 40-50%</li>
+                    <li>🎯 Рост количества визитов на 60%</li>
+                    <li>⏱️ Экономия 3-4 часов в день на отчетности</li>
+                    <li>📊 100% прозрачность работы полевой команды</li>
+                    <li>💰 ROI за 2-3 месяца использования</li>
+                </ul>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">2-3</div>
+                    <div class="stat-label">Месяца до ROI</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">1000+</div>
+                    <div class="stat-label">Торговых представителей</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">50k+</div>
+                    <div class="stat-label">Визитов в месяц</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 5: Контакты -->
+        <div class="slide">
+            <h1>Начните расти уже завтра</h1>
+
+            <div class="contact-info">
+                <h3>Свяжитесь с нами</h3>
+                <p style="font-size: 1.3em; margin: 30px 0;">
+                    📧 sales@nogame.ru<br>
+                    📞 +7 (495) 123-45-67<br>
+                    🌐 www.nogame.ru
+                </p>
+                <p style="font-size: 1.1em; opacity: 0.9; margin-top: 40px;">
+                    Получите бесплатную демонстрацию и расчет экономического эффекта для вашей компании
+                </p>
+            </div>
+
+            <div class="highlight" style="margin-top: 40px;">
+                <h3 style="text-align: center; color: var(--primary-color);">Специальное предложение для ритейла</h3>
+                <p style="text-align: center; font-size: 1.2em;">
+                    🎁 Первые 2 месяца бесплатно для команд от 10 представителей<br>
+                    🎁 Бесплатное обучение команды и руководителей<br>
+                    🎁 Интеграция с вашей CRM-системой в подарок
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-button" id="prevBtn" onclick="changeSlide(-1)">← Назад</button>
+        <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">5</span></span>
+        <button class="nav-button" id="nextBtn" onclick="changeSlide(1)">Вперед →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+
+            if (n > totalSlides) currentSlide = totalSlides;
+            if (n < 1) currentSlide = 1;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide - 1].classList.add('active');
+
+            document.getElementById('currentSlide').textContent = currentSlide;
+            document.getElementById('prevBtn').disabled = currentSlide === 1;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+        }
+
+        function changeSlide(n) {
+            currentSlide += n;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>

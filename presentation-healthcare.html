@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nogame - Решение для здравоохранения и сервисов</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary-color: #0891b2;
+            --secondary-color: #06b6d4;
+            --accent-color: #22d3ee;
+            --dark-bg: #083344;
+            --medium-bg: #0e7490;
+            --light-bg: #155e75;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--medium-bg) 50%, var(--light-bg) 100%);
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .presentation-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .slide {
+            background: linear-gradient(to bottom right, #ffffff 0%, #ecfeff 100%);
+            border-radius: 24px;
+            box-shadow: 0 30px 90px rgba(8, 145, 178, 0.3), 0 0 1px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            padding: 60px;
+            min-height: 700px;
+            display: none;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 50%, var(--accent-color) 100%);
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide h1 {
+            color: #1a1a2e;
+            font-size: 3.5em;
+            font-weight: 800;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            position: relative;
+            padding-bottom: 25px;
+        }
+
+        .slide h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 3px;
+        }
+
+        .slide h2 {
+            color: #164e63;
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 25px;
+            margin-top: 40px;
+            letter-spacing: -0.01em;
+        }
+
+        .slide h3 {
+            color: var(--secondary-color);
+            font-size: 1.6em;
+            font-weight: 600;
+            margin-bottom: 18px;
+            margin-top: 30px;
+        }
+
+        .slide p {
+            font-size: 1.15em;
+            margin-bottom: 18px;
+            text-align: left;
+            color: #0e7490;
+            font-weight: 400;
+            line-height: 1.8;
+        }
+
+        .slide ul, .slide ol {
+            margin-left: 30px;
+            margin-bottom: 25px;
+        }
+
+        .slide li {
+            font-size: 1.15em;
+            margin-bottom: 12px;
+            color: #0e7490;
+            line-height: 1.7;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+            border: 2px solid rgba(8, 145, 178, 0.25);
+            padding: 30px;
+            border-radius: 16px;
+            margin: 30px 0;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(8, 145, 178, 0.15);
+        }
+
+        .highlight::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 16px 0 0 16px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #ecfeff 100%);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid #a5f3fc;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 0;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feature-card:hover::before {
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(8, 145, 178, 0.2);
+            border-color: var(--secondary-color);
+        }
+
+        .feature-card h4 {
+            color: #164e63;
+            margin-bottom: 18px;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            text-align: center;
+            transform: scale(1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(8, 145, 178, 0.3);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 60px rgba(8, 145, 178, 0.4);
+        }
+
+        .stat-number {
+            font-size: 3.5em;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 18px 40px;
+            border-radius: 60px;
+            box-shadow: 0 20px 60px rgba(8, 145, 178, 0.3);
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        .nav-button {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            margin: 0 8px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px rgba(8, 145, 178, 0.3);
+        }
+
+        .nav-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(8, 145, 178, 0.5);
+        }
+
+        .nav-button:disabled {
+            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+
+        .slide-counter {
+            display: inline-block;
+            margin: 0 25px;
+            font-weight: 700;
+            color: #164e63;
+            font-size: 1.1em;
+        }
+
+        .roi-section {
+            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+            color: white;
+            padding: 45px;
+            border-radius: 20px;
+            margin: 40px 0;
+            box-shadow: 0 15px 50px rgba(14, 165, 233, 0.3);
+        }
+
+        .roi-section h3 {
+            color: white;
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 1.8em;
+        }
+
+        .contact-info {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--medium-bg) 100%);
+            color: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            margin: 40px 0;
+            box-shadow: 0 15px 50px rgba(8, 145, 178, 0.3);
+        }
+
+        .contact-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 30px 20px;
+                min-height: 600px;
+            }
+            .slide h1 {
+                font-size: 2.5em;
+            }
+            .feature-grid, .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- Слайд 1: Титульный -->
+        <div class="slide active">
+            <h1>Nogame</h1>
+            <h2 style="text-align: center; color: var(--secondary-color); margin-top: 40px;">Цифровизация выездных медицинских и сервисных услуг</h2>
+
+            <div class="highlight" style="margin-top: 60px;">
+                <h3 style="color: var(--primary-color); text-align: center;">Забота о пациентах нового уровня</h3>
+                <p style="text-align: center; font-size: 1.3em; margin-top: 20px;">
+                    Nogame - платформа для управления медицинскими представителями, выездными специалистами и сервисными бригадами
+                </p>
+            </div>
+
+            <div class="stats-grid" style="margin-top: 60px;">
+                <div class="stat-item">
+                    <div class="stat-number">50%</div>
+                    <div class="stat-label">Больше визитов</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">99%</div>
+                    <div class="stat-label">Точность записей</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">4.9★</div>
+                    <div class="stat-label">Оценка клиентов</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 2: Проблема -->
+        <div class="slide">
+            <h1>Вызовы медицинских и сервисных организаций</h1>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📋 Бумажная документация</h4>
+                    <p>Медицинские карты и сервисные акты заполняются вручную</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⏰ Срыв расписания</h4>
+                    <p>Пациенты и клиенты не знают точное время прибытия специалиста</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚑 Нет оптимизации маршрутов</h4>
+                    <p>Выездные бригады тратят время на неэффективные маршруты</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📞 Сложная коммуникация</h4>
+                    <p>Проблемы с передачей информации между специалистами и офисом</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💊 Учет материалов</h4>
+                    <p>Сложно отслеживать расход медицинских материалов и запчастей</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Нет статистики</h4>
+                    <p>Отсутствие данных для анализа качества услуг</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 3: Решение -->
+        <div class="slide">
+            <h1>Nogame - Цифровая трансформация</h1>
+
+            <div class="highlight">
+                <h3>Комплексная автоматизация выездных услуг</h3>
+                <p>Управление графиком, маршрутами, документацией и качеством обслуживания в одной системе</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📅 Управление расписанием</h4>
+                    <p>Автоматическое планирование визитов с учетом приоритетов и географии</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📱 Мобильная карта пациента</h4>
+                    <p>Вся история, назначения и протоколы доступны специалисту на планшете</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🗺️ GPS-навигация</h4>
+                    <p>Оптимальные маршруты с учетом пробок и экстренных вызовов</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📝 Электронная подпись</h4>
+                    <p>Цифровое оформление актов и согласий прямо на месте</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💬 Онлайн-связь</h4>
+                    <p>Мгновенная связь между специалистами и координационным центром</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Аналитика качества</h4>
+                    <p>Отслеживание показателей качества обслуживания и удовлетворенности</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 4: ROI -->
+        <div class="slide">
+            <h1>Преимущества внедрения</h1>
+
+            <div class="roi-section">
+                <h3>Улучшение качества услуг и операционной эффективности</h3>
+                <ul style="font-size: 1.2em; line-height: 2;">
+                    <li>👥 Увеличение количества обслуженных пациентов на 50%</li>
+                    <li>⏱️ Сокращение времени на документацию на 70%</li>
+                    <li>📍 Точность прибытия в заданное время 95%+</li>
+                    <li>😊 Рост удовлетворенности клиентов до 4.8/5</li>
+                    <li>💰 Окупаемость за 3-5 месяцев</li>
+                </ul>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">3-5</div>
+                    <div class="stat-label">Месяцев до ROI</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Цифровая документация</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">HIPAA</div>
+                    <div class="stat-label">Соответствие стандартам</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 5: Контакты -->
+        <div class="slide">
+            <h1>Улучшите качество заботы</h1>
+
+            <div class="contact-info">
+                <h3>Свяжитесь с нами</h3>
+                <p style="font-size: 1.3em; margin: 30px 0;">
+                    📧 healthcare@nogame.ru<br>
+                    📞 +7 (495) 123-45-67<br>
+                    🌐 www.nogame.ru
+                </p>
+                <p style="font-size: 1.1em; opacity: 0.9; margin-top: 40px;">
+                    Запросите демонстрацию решения для медицинских и сервисных организаций
+                </p>
+            </div>
+
+            <div class="highlight" style="margin-top: 40px;">
+                <h3 style="text-align: center; color: var(--primary-color);">Специальное предложение для медицинских организаций</h3>
+                <p style="text-align: center; font-size: 1.2em;">
+                    🎁 Бесплатный пилотный проект на 1 месяц<br>
+                    🎁 Помощь в интеграции с медицинской информационной системой<br>
+                    🎁 Обучение персонала и техподдержка 24/7
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-button" id="prevBtn" onclick="changeSlide(-1)">← Назад</button>
+        <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">5</span></span>
+        <button class="nav-button" id="nextBtn" onclick="changeSlide(1)">Вперед →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+
+            if (n > totalSlides) currentSlide = totalSlides;
+            if (n < 1) currentSlide = 1;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide - 1].classList.add('active');
+
+            document.getElementById('currentSlide').textContent = currentSlide;
+            document.getElementById('prevBtn').disabled = currentSlide === 1;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+        }
+
+        function changeSlide(n) {
+            currentSlide += n;
+            showSlide(currentSlide);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>
