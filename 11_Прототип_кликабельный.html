@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Гастроль — прототип платформы тур-менеджмента</title>
+<style>
+:root{
+  --bg:#0e1016; --bg-elev:#161922; --bg-elev2:#1d212c; --bg-hover:#232836;
+  --border:#272c39; --border-soft:#1f2430;
+  --text:#e8eaf0; --text-dim:#9aa4b6; --text-mute:#69728a;
+  --accent:#7c6cff; --accent-2:#ec4899; --accent-soft:rgba(124,108,255,.16);
+  --ok:#34d399; --ok-soft:rgba(52,211,153,.15);
+  --warn:#fbbf24; --warn-soft:rgba(251,191,36,.15);
+  --danger:#f87171; --danger-soft:rgba(248,113,113,.15);
+  --info:#38bdf8; --info-soft:rgba(56,189,248,.15);
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+  --radius:14px; --radius-sm:10px;
+  --grad:linear-gradient(135deg,#7c6cff 0%,#ec4899 100%);
+}
+html[data-theme="light"]{
+  --bg:#eef1f6; --bg-elev:#ffffff; --bg-elev2:#ffffff; --bg-hover:#f3f5f9;
+  --border:#e2e7f0; --border-soft:#edf0f6;
+  --text:#161a24; --text-dim:#55617a; --text-mute:#8b94a8;
+  --accent:#6d5cf0; --accent-2:#e0457f; --accent-soft:rgba(109,92,240,.10);
+  --ok:#0f9d6b; --ok-soft:rgba(15,157,107,.12);
+  --warn:#d98a00; --warn-soft:rgba(217,138,0,.12);
+  --danger:#e0524c; --danger-soft:rgba(224,82,76,.12);
+  --info:#0a8fd0; --info-soft:rgba(10,143,208,.12);
+  --shadow:0 8px 26px rgba(40,50,80,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;
+  display:flex;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{width:248px;flex-shrink:0;background:var(--bg-elev);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:background .3s}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.brand-logo{width:38px;height:38px;border-radius:11px;background:var(--grad);display:flex;
+  align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:19px;flex-shrink:0;
+  box-shadow:0 4px 14px rgba(124,108,255,.4)}
+.brand-name{font-weight:800;font-size:17px;letter-spacing:.3px}
+.brand-sub{font-size:10.5px;color:var(--text-mute);letter-spacing:1.5px;text-transform:uppercase}
+.nav{flex:1;overflow-y:auto;padding:6px 12px}
+.nav-label{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--text-mute);
+  padding:14px 12px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;
+  color:var(--text-dim);cursor:pointer;font-weight:500;margin-bottom:2px;transition:.15s;position:relative}
+.nav-item:hover{background:var(--bg-hover);color:var(--text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent)}
+.nav-item.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
+  border-radius:0 3px 3px 0;background:var(--accent)}
+.nav-item .ico{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.9}
+.nav-item .badge{margin-left:auto;font-size:11px;background:var(--accent);color:#fff;
+  border-radius:20px;padding:1px 7px;font-weight:700}
+.nav-item .badge.dim{background:var(--bg-elev2);color:var(--text-dim)}
+.sidebar-foot{padding:14px;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;cursor:pointer}
+.user-chip:hover{background:var(--bg-hover)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--grad);display:flex;align-items:center;
+  justify-content:center;font-weight:700;color:#fff;font-size:13px;flex-shrink:0}
+.user-meta{font-size:12.5px;font-weight:600;line-height:1.3}
+.user-meta span{display:block;font-size:11px;color:var(--text-mute);font-weight:400}
+
+/* ---------- MAIN ---------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:62px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(10px);display:flex;align-items:center;gap:16px;padding:0 26px;position:sticky;top:0;z-index:30}
+.crumb{font-size:13px;color:var(--text-mute)}
+.crumb b{color:var(--text);font-weight:700;font-size:15px}
+.search{flex:1;max-width:420px;margin-left:8px;position:relative}
+.search input{width:100%;background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;
+  padding:8px 12px 8px 34px;color:var(--text);font-size:13px;outline:none}
+.search input:focus{border-color:var(--accent)}
+.search svg{position:absolute;left:10px;top:9px;width:16px;height:16px;stroke:var(--text-mute);fill:none;stroke-width:2}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elev);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);transition:.15s;position:relative}
+.icon-btn:hover{color:var(--text);border-color:var(--accent)}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9}
+.icon-btn .dot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--accent-2);border:2px solid var(--bg-elev)}
+.btn{border:none;border-radius:10px;padding:9px 16px;font-weight:600;font-size:13px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;transition:.15s;font-family:inherit}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:var(--bg-elev);color:var(--text-dim);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent)}
+
+.content{flex:1;overflow-y:auto;padding:26px 30px 60px}
+.view{display:none;animation:fade .35s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:flex-end;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.page-head h1{font-size:23px;font-weight:800;letter-spacing:-.3px}
+.page-head p{color:var(--text-dim);font-size:13.5px;margin-top:3px}
+.page-head .ph-actions{margin-left:auto;display:flex;gap:10px}
+
+/* cards / grid */
+.grid{display:grid;gap:18px}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1100px){.cols-4{grid-template-columns:repeat(2,1fr)}.cols-3{grid-template-columns:1fr}}
+.card{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:background .3s}
+.card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.card-title .ico{width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2}
+.card-title .more{margin-left:auto;color:var(--text-mute);font-size:12px;font-weight:500;cursor:pointer}
+
+/* KPI */
+.kpi{position:relative;overflow:hidden}
+.kpi .k-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.kpi .k-ico svg{width:20px;height:20px;stroke-width:2;fill:none}
+.kpi .k-val{font-size:28px;font-weight:800;letter-spacing:-.5px}
+.kpi .k-lbl{font-size:12.5px;color:var(--text-dim);margin-top:2px}
+.kpi .k-trend{font-size:12px;font-weight:700;margin-top:10px;display:inline-flex;align-items:center;gap:4px}
+.trend-up{color:var(--ok)} .trend-down{color:var(--danger)}
+
+/* badges */
+.badge-s{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.badge-s::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-info{background:var(--info-soft);color:var(--info)}
+.b-danger{background:var(--danger-soft);color:var(--danger)}
+.b-accent{background:var(--accent-soft);color:var(--accent)}
+.tag{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--bg-elev2);color:var(--text-dim);font-weight:600}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-mute);
+  font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border)}
+td{padding:11px 12px;border-bottom:1px solid var(--border-soft);color:var(--text-dim)}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:.12s}
+tbody tr:hover{background:var(--bg-hover)}
+td b,td .name{color:var(--text);font-weight:600}
+.row-flex{display:flex;align-items:center;gap:10px}
+.mini-ava{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+
+/* list rows */
+.lrow{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--border-soft)}
+.lrow:last-child{border-bottom:none}
+.date-box{width:48px;text-align:center;flex-shrink:0}
+.date-box .d{font-size:19px;font-weight:800;line-height:1}
+.date-box .m{font-size:10.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.5px}
+.lrow .l-main{flex:1;min-width:0}
+.lrow .l-t{font-weight:600;color:var(--text)}
+.lrow .l-s{font-size:12px;color:var(--text-mute);margin-top:1px}
+
+/* calendar grid */
+.cal{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg-elev2)}
+.cal-head div{padding:10px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mute);font-weight:600}
+.cal-body{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-cell{min-height:96px;border-right:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);padding:7px;position:relative}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell .dn{font-size:12px;color:var(--text-dim);font-weight:600}
+.cal-cell.muted{background:color-mix(in srgb,var(--bg-elev2) 50%,transparent)}
+.cal-cell.muted .dn{color:var(--text-mute);opacity:.5}
+.cal-cell.today .dn{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ev{margin-top:5px;font-size:11px;padding:3px 6px;border-radius:6px;font-weight:600;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid}
+.ev:hover{filter:brightness(1.1)}
+.ev.confirmed{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.ev.hold{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.ev.announced{background:var(--info-soft);color:var(--info);border-color:var(--info)}
+.ev.travel{background:var(--bg-elev2);color:var(--text-dim);border-color:var(--text-mute)}
+
+/* routing timeline */
+.routing{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:6px 2px 12px}
+.route-stop{flex-shrink:0;min-width:150px;position:relative;padding:0 6px}
+.route-stop .pin{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.route-stop .dot{width:13px;height:13px;border-radius:50%;border:3px solid var(--bg-elev);flex-shrink:0;z-index:2}
+.route-stop .line{position:absolute;top:5px;left:50%;right:-50%;height:3px;background:var(--border);z-index:1}
+.route-stop:last-child .line{display:none}
+.route-card{background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:11px 12px}
+.route-card .rc-city{font-weight:700;font-size:13.5px}
+.route-card .rc-date{font-size:11.5px;color:var(--text-mute)}
+.route-card .rc-venue{font-size:11.5px;color:var(--text-dim);margin-top:6px}
+
+/* day sheet timeline */
+.ds-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}
+@media(max-width:1000px){.ds-grid{grid-template-columns:1fr}}
+.tline{position:relative;padding-left:8px}
+.tline-item{display:flex;gap:14px;padding:2px 0}
+.tline-time{width:52px;flex-shrink:0;text-align:right;font-weight:700;font-size:13px;padding-top:9px}
+.tline-mid{position:relative;width:20px;flex-shrink:0;display:flex;justify-content:center}
+.tline-mid::before{content:"";position:absolute;top:0;bottom:0;width:2px;background:var(--border)}
+.tline-dot{width:13px;height:13px;border-radius:50%;background:var(--accent);margin-top:11px;z-index:2;border:3px solid var(--bg-elev)}
+.tline-item.key .tline-dot{background:var(--accent-2);box-shadow:0 0 0 4px var(--accent-soft)}
+.tline-body{flex:1;background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:8px}
+.tline-body .tb-t{font-weight:600;color:var(--text)}
+.tline-body .tb-s{font-size:12px;color:var(--text-mute);margin-top:2px}
+.info-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:13px}
+.info-line:last-child{border-bottom:none}
+.info-line span{color:var(--text-mute)} .info-line b{color:var(--text);font-weight:600;text-align:right}
+
+/* logistics / ticket parse */
+.parse-box{border:2px dashed var(--border);border-radius:12px;padding:26px;text-align:center;transition:.2s;cursor:pointer}
+.parse-box:hover{border-color:var(--accent);background:var(--accent-soft)}
+.parse-box svg{width:38px;height:38px;stroke:var(--accent);fill:none;stroke-width:1.6;margin-bottom:10px}
+.parse-result{display:none;margin-top:16px}
+.parse-result.show{display:block;animation:fade .4s}
+.field{margin-bottom:12px}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mute);font-weight:600;display:block;margin-bottom:5px}
+.field .val{background:var(--bg-elev2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-weight:600;display:flex;align-items:center;gap:8px}
+.field .val .chk{color:var(--ok)}
+
+/* aggregator */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-elev);
+  color:var(--text-dim);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+.chip:hover{color:var(--text)}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.src{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}
+.src.timepad{background:rgba(56,189,248,.16);color:#38bdf8}
+.src.qtickets{background:rgba(52,211,153,.16);color:#34d399}
+.src.afisha{background:rgba(251,191,36,.16);color:#fbbf24}
+.src.ticketscloud{background:rgba(236,72,153,.16);color:#ec4899}
+.dedup{font-size:11px;color:var(--text-mute);display:inline-flex;align-items:center;gap:4px}
+.dedup svg{width:13px;height:13px;stroke:var(--ok);fill:none;stroke-width:2.4}
+
+/* venues map */
+.map-wrap{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+@media(max-width:1000px){.map-wrap{grid-template-columns:1fr}}
+.map{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);
+  position:relative;height:430px;overflow:hidden;background-image:radial-gradient(var(--border-soft) 1px,transparent 1px);background-size:26px 26px}
+.map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;z-index:3}
+.map-pin .pdot{width:15px;height:15px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+  background:var(--accent);border:2px solid var(--bg-elev);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.map-pin.cap-l .pdot{background:var(--accent-2);width:19px;height:19px}
+.map-pin .plabel{position:absolute;top:-6px;left:20px;font-size:11px;font-weight:600;white-space:nowrap;
+  background:var(--bg-elev);border:1px solid var(--border);padding:2px 7px;border-radius:6px;color:var(--text);opacity:0;transition:.15s;pointer-events:none}
+.map-pin:hover .plabel{opacity:1}
+.route-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.radius-demo{margin-top:14px}
+.radius-result{margin-top:12px;padding:13px;border-radius:10px;font-size:13px;display:none}
+.radius-result.show{display:block;animation:fade .3s}
+.radius-result.fail{background:var(--danger-soft);color:var(--danger)}
+.radius-result.pass{background:var(--ok-soft);color:var(--ok)}
+
+/* phone / bot */
+.phone{width:330px;margin:0 auto;background:var(--bg-elev2);border:10px solid #06070b;border-radius:38px;
+  padding:0;overflow:hidden;box-shadow:var(--shadow);position:relative}
+html[data-theme="light"] .phone{border-color:#222}
+.phone-notch{height:26px;background:#06070b;border-radius:0 0 16px 16px;width:140px;margin:0 auto}
+.tg-head{background:#527da6;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:11px}
+html[data-theme="light"] .tg-head{background:#5288c1}
+.tg-head .ava{width:36px;height:36px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.tg-head .tg-name{font-weight:700;font-size:14px}
+.tg-head .tg-status{font-size:11px;opacity:.85}
+.tg-body{background:#0e1621;padding:14px;min-height:430px;display:flex;flex-direction:column;gap:9px}
+html[data-theme="light"] .tg-body{background:#cfd9e2}
+.msg{max-width:84%;padding:8px 12px;border-radius:13px;font-size:13px;line-height:1.45}
+.msg.bot{background:#182533;color:#e8eaf0;align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:#2b5278;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+html[data-theme="light"] .msg.bot{background:#fff;color:#1a1a1a}
+html[data-theme="light"] .msg.me{background:#eeffde;color:#1a1a1a}
+.msg .mt{font-size:10px;opacity:.6;text-align:right;margin-top:3px}
+.msg b{font-weight:700}
+.tg-kbd{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tg-btn{background:#17212b;color:#6ab3f3;font-size:12px;padding:7px 11px;border-radius:8px;font-weight:600;border:1px solid #243240}
+html[data-theme="light"] .tg-btn{background:#fff;color:#3390ec;border-color:#dbe2ea}
+
+/* pricing */
+.price-card{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;display:flex;flex-direction:column}
+.price-card.pop{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.price-card .pop-tag{position:absolute;top:-11px;left:24px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 11px;border-radius:20px}
+.price-card .pc-name{font-weight:700;font-size:16px}
+.price-card .pc-price{font-size:32px;font-weight:800;margin:12px 0 2px;letter-spacing:-1px}
+.price-card .pc-price small{font-size:14px;color:var(--text-mute);font-weight:600}
+.price-card .pc-desc{font-size:12.5px;color:var(--text-dim);min-height:34px}
+.price-card ul{list-style:none;margin:16px 0;flex:1}
+.price-card li{font-size:13px;padding:7px 0;display:flex;gap:9px;align-items:flex-start;color:var(--text-dim)}
+.price-card li svg{width:16px;height:16px;stroke:var(--ok);fill:none;stroke-width:2.4;flex-shrink:0;margin-top:2px}
+
+.section-gap{margin-top:22px}
+.note{font-size:12px;color:var(--text-mute);background:var(--bg-elev);border:1px solid var(--border);
+  border-radius:10px;padding:11px 14px;display:flex;gap:9px;align-items:flex-start}
+.note svg{width:15px;height:15px;stroke:var(--info);fill:none;stroke-width:2;flex-shrink:0;margin-top:2px}
+.demo-banner{background:var(--grad);color:#fff;font-size:12px;font-weight:600;text-align:center;padding:6px;letter-spacing:.3px}
+.split-bar{display:flex;gap:7px;margin-top:14px;height:9px;border-radius:6px;overflow:hidden}
+.split-bar i{display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--text-dim)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.progress{height:7px;background:var(--bg-elev2);border-radius:6px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--accent);border-radius:6px}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-logo">Г</div>
+    <div>
+      <div class="brand-name">Гастроль</div>
+      <div class="brand-sub">Tour OS</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Операционный контур</div>
+    <div class="nav-item active" data-view="dashboard">
+      <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      <span>Дашборд</span></div>
+    <div class="nav-item" data-view="calendar">
+      <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>Календарь тура</span><span class="badge">10</span></div>
+    <div class="nav-item" data-view="daysheet">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+      <span>Суточный лист</span></div>
+    <div class="nav-item" data-view="logistics">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
+      <span>Логистика</span><span class="badge dim">3</span></div>
+    <div class="nav-item" data-view="team">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Команда тура</span></div>
+    <div class="nav-label">Информационный контур</div>
+    <div class="nav-item" data-view="aggregator">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
+      <span>Афиша / Агрегатор</span></div>
+    <div class="nav-item" data-view="venues">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span>Каталог площадок</span></div>
+    <div class="nav-label">Команда и продукт</div>
+    <div class="nav-item" data-view="bot">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+      <span>Telegram-бот</span></div>
+    <div class="nav-item" data-view="pricing">
+      <svg class="ico" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>
+      <span>Тарифы</span></div>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="user-chip">
+      <div class="avatar">МК</div>
+      <div class="user-meta">Марина Котова<span>Тур-менеджер</span></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<div class="main">
+  <div class="demo-banner">ИНТЕРАКТИВНЫЙ ПРОТОТИП · демонстрационные данные · «Гастроль» (рабочее название)</div>
+  <header class="topbar">
+    <div class="crumb">Тур «Резонанс» 2026 ·&nbsp; <b id="crumbView">Дашборд</b></div>
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input placeholder="Поиск по турам, площадкам, событиям…">
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" title="Сменить тему">
+        <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="icon-btn" title="Уведомления"><span class="dot"></span><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+      <button class="btn btn-primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Новое шоу</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="view active" id="dashboard">
+    <div class="page-head">
+      <div><h1>Дашборд тура</h1><p>Группа «Кварц» · тур «Резонанс» · 12 сен — 28 ноя 2026 · 18 городов</p></div>
+      <div class="ph-actions"><button class="btn btn-ghost"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Экспорт PDF</button></div>
+    </div>
+    <div class="grid cols-4">
+      <div class="card kpi"><div class="k-ico" style="background:var(--accent-soft)"><svg style="stroke:var(--accent)" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <div class="k-val">10</div><div class="k-lbl">шоу в туре</div><div class="k-trend trend-up">7 подтверждено · 2 hold · 1 анонс</div></div>
+      <div class="card kpi"><div class="k-ico" style="background:var(--ok-soft)"><svg style="stroke:var(--ok)" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="k-val">₽ 4,8 млн</div><div class="k-lbl">бюджет логистики</div><div class="k-trend trend-down">−6% к плану (экономия)</div></div>
+      <div class="card kpi"><div class="k-ico" style="background:var(--info-soft)"><svg style="stroke:var(--info)" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <div class="k-val">14</div><div class="k-lbl">человек в команде</div><div class="k-trend trend-up">12 в Telegram-боте</div></div>
+      <div class="card kpi"><div class="k-ico" style="background:var(--warn-soft)"><svg style="stroke:var(--warn)" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg></div>
+        <div class="k-val">3</div><div class="k-lbl">задачи требуют внимания</div><div class="k-trend trend-down">2 hold-дедлайна, 1 пересадка</div></div>
+    </div>
+
+    <div class="grid cols-3 section-gap">
+      <div class="card" style="grid-column:span 2">
+        <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Ближайшие шоу<span class="more" data-goto="calendar">Весь календарь →</span></div>
+        <div class="lrow"><div class="date-box"><div class="d">15</div><div class="m">сен</div></div>
+          <div class="l-main"><div class="l-t">Москва · Crocus City Hall</div><div class="l-s">Doors 18:00 · Set 20:00 · 7 200 мест · промоутер NCA</div></div>
+          <span class="badge-s b-ok">подтверждено</span></div>
+        <div class="lrow"><div class="date-box"><div class="d">18</div><div class="m">сен</div></div>
+          <div class="l-main"><div class="l-t">Москва · Crocus City Hall <span class="tag">доп. шоу</span></div><div class="l-s">Doors 18:00 · Set 20:00 · sold out</div></div>
+          <span class="badge-s b-ok">подтверждено</span></div>
+        <div class="lrow"><div class="date-box"><div class="d">20</div><div class="m">сен</div></div>
+          <div class="l-main"><div class="l-t">Казань · Татнефть Арена</div><div class="l-s">Перелёт SU 1178 09:25 · отель Korston · саундчек 16:00</div></div>
+          <span class="badge-s b-ok">подтверждено</span></div>
+        <div class="lrow"><div class="date-box"><div class="d">23</div><div class="m">сен</div></div>
+          <div class="l-main"><div class="l-t">Нижний Новгород · КРК «Нагорный»</div><div class="l-s">Ожидаем подтверждение площадки до 15 сен</div></div>
+          <span class="badge-s b-warn">hold</span></div>
+        <div class="lrow"><div class="date-box"><div class="d">26</div><div class="m">сен</div></div>
+          <div class="l-main"><div class="l-t">Екатеринбург · МТС Live Холл</div><div class="l-s">Doors 18:30 · Set 20:00 · 5 000 мест</div></div>
+          <span class="badge-s b-ok">подтверждено</span></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Требуют внимания</div>
+          <div class="lrow"><span class="badge-s b-warn">hold</span><div class="l-main"><div class="l-t" style="font-size:13px">Нижний Новгород</div><div class="l-s">Дедлайн снятия hold — 15 сен</div></div></div>
+          <div class="lrow"><span class="badge-s b-danger">риск</span><div class="l-main"><div class="l-t" style="font-size:13px">Стыковка Казань→Екб</div><div class="l-s">Пересадка 55 мин — мало для backline</div></div></div>
+          <div class="lrow"><span class="badge-s b-info">райдер</span><div class="l-main"><div class="l-t" style="font-size:13px">Новосибирск</div><div class="l-s">Не получен техрайдер площадки</div></div></div>
+        </div>
+        <div class="card section-gap">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Готовность тура</div>
+          <div style="font-size:13px;color:var(--text-dim)">Логистика забронирована<div class="progress"><i style="width:78%"></i></div></div>
+          <div style="font-size:13px;color:var(--text-dim);margin-top:12px">Райдеры согласованы<div class="progress"><i style="width:64%;background:var(--info)"></i></div></div>
+          <div style="font-size:13px;color:var(--text-dim);margin-top:12px">Day sheets готовы<div class="progress"><i style="width:90%;background:var(--ok)"></i></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CALENDAR ===== -->
+  <section class="view" id="calendar">
+    <div class="page-head">
+      <div><h1>Календарь тура</h1><p>Сентябрь 2026 · маршрут и статусы шоу. Клик по событию открывает суточный лист.</p></div>
+      <div class="ph-actions"><button class="btn btn-ghost">Месяц</button><button class="btn btn-ghost">Маршрут</button><button class="btn btn-primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Добавить дату</button></div>
+    </div>
+    <div class="cal">
+      <div class="cal-head"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div></div>
+      <div class="cal-body" id="calBody"></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--ok)"></i>Подтверждено</span>
+      <span><i style="background:var(--warn)"></i>Hold (бронь)</span>
+      <span><i style="background:var(--info)"></i>Анонсировано</span>
+      <span><i style="background:var(--text-mute)"></i>Переезд / day off</span>
+    </div>
+    <div class="card section-gap">
+      <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Маршрут тура (routing)</div>
+      <div class="routing" id="routing"></div>
+    </div>
+  </section>
+
+  <!-- ===== DAY SHEET ===== -->
+  <section class="view" id="daysheet">
+    <div class="page-head">
+      <div><h1>Суточный лист · 18 сентября</h1><p>Москва · Crocus City Hall · «Кварц» — доп. шоу (sold out)</p></div>
+      <div class="ph-actions"><button class="btn btn-ghost"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 9h6v6H9z"/></svg>Отправить команде</button><button class="btn btn-primary"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>Сгенерировать PDF</button></div>
+    </div>
+    <div class="ds-grid">
+      <div class="card">
+        <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Расписание дня</div>
+        <div class="tline">
+          <div class="tline-item"><div class="tline-time">08:30</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Lobby call</div><div class="tb-s">Сбор в лобби отеля Soluxe · 14 человек</div></div></div>
+          <div class="tline-item"><div class="tline-time">09:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Трансфер в зал</div><div class="tb-s">2 микроавтобуса Mercedes Sprinter · ≈40 мин</div></div></div>
+          <div class="tline-item key"><div class="tline-time">10:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Load-in / разгрузка</div><div class="tb-s">Грузовой въезд со двора · фура 1 · стейдж-менеджер встречает</div></div></div>
+          <div class="tline-item"><div class="tline-time">13:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Сборка сцены и свет</div><div class="tb-s">Линия задержки, видеоэкран 10×6 м</div></div></div>
+          <div class="tline-item key"><div class="tline-time">16:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Саундчек</div><div class="tb-s">Полный состав · линейный чек 16:00–17:30</div></div></div>
+          <div class="tline-item"><div class="tline-time">18:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Doors — доступ зрителей</div><div class="tb-s">Контроль, фуршет VIP-ложи</div></div></div>
+          <div class="tline-item"><div class="tline-time">19:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Разогрев</div><div class="tb-s">DJ-сет · 30 мин</div></div></div>
+          <div class="tline-item key"><div class="tline-time">20:00</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Основной сет «Кварц»</div><div class="tb-s">2 отделения · 2 ч 20 мин с антрактом</div></div></div>
+          <div class="tline-item"><div class="tline-time">22:30</div><div class="tline-mid"><div class="tline-dot"></div></div><div class="tline-body"><div class="tb-t">Curfew · Load-out</div><div class="tb-s">Демонтаж, погрузка фуры до 00:30</div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Площадка</div>
+          <div class="info-line"><span>Зал</span><b>Crocus City Hall</b></div>
+          <div class="info-line"><span>Адрес</span><b>МКАД 65–66 км, Красногорск</b></div>
+          <div class="info-line"><span>Вместимость</span><b>7 200</b></div>
+          <div class="info-line"><span>Промоутер</span><b>NCA · М. Шурыгин</b></div>
+          <div class="info-line"><span>Стейдж-менеджер</span><b>+7 905 ··· 14 22</b></div>
+        </div>
+        <div class="card section-gap">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>Отель и погода</div>
+          <div class="info-line"><span>Отель</span><b>Soluxe Hotel Moscow</b></div>
+          <div class="info-line"><span>Заезд / выезд</span><b>17 сен / 19 сен</b></div>
+          <div class="info-line"><span>Номеров</span><b>9 (4 SGL, 5 TWN)</b></div>
+          <div class="info-line"><span>Погода</span><b>+14°C, без осадков ☁</b></div>
+          <div class="info-line"><span>Curfew зала</span><b>23:00</b></div>
+        </div>
+        <div class="note section-gap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Изменения в расписании автоматически уходят push-уведомлением всей команде в Telegram-бот.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LOGISTICS ===== -->
+  <section class="view" id="logistics">
+    <div class="page-head">
+      <div><h1>Логистика тура</h1><p>Перелёты, поезда, отели и трансферы. Билеты распознаются из PDF автоматически.</p></div>
+      <div class="ph-actions"><button class="btn btn-ghost">Все сегменты</button><button class="btn btn-primary"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Добавить сегмент</button></div>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M17.8 19.2L16 11l3.5-3.5a2.12 2.12 0 0 0-3-3L13 8 4.8 6.2a1 1 0 0 0-.9 1.7l5.6 3.4-2.5 2.5H4.5L3 16.8l3 1 1 3 1.8-1.5v-2.5l2.5-2.5 3.4 5.6a1 1 0 0 0 1.7-.9z"/></svg>Сегменты переездов</div>
+        <table>
+          <thead><tr><th>Тип</th><th>Маршрут</th><th>Дата / время</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge-s b-info">✈ авиа</span></td><td><b>SU 1178</b> Москва → Казань</td><td>20 сен · 09:25–10:50</td><td><span class="badge-s b-ok">выписан</span></td></tr>
+            <tr><td><span class="badge-s b-info">✈ авиа</span></td><td><b>U6 252</b> Казань → Екатеринбург</td><td>26 сен · 11:40–15:20</td><td><span class="badge-s b-warn">пересадка 55 мин</span></td></tr>
+            <tr><td><span class="badge-s b-accent">🚆 ж/д</span></td><td><b>№ 023А</b> Москва → СПб «Сапсан»</td><td>11 сен · 07:00–10:50</td><td><span class="badge-s b-ok">выписан</span></td></tr>
+            <tr><td><span class="badge-s b-warn">🚐 трансфер</span></td><td>Аэропорт Кольцово → отель</td><td>26 сен · 15:40</td><td><span class="badge-s b-info">заказан</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Распознавание PDF-билета</div>
+        <div class="parse-box" id="parseBox">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <div style="font-weight:600;color:var(--text)">Перетащите PDF билета РЖД / авиакомпании</div>
+          <div style="font-size:12px;color:var(--text-mute);margin-top:4px">Нажмите, чтобы сымитировать распознавание билета «Аэрофлот»</div>
+        </div>
+        <div class="parse-result" id="parseResult">
+          <div class="note" style="margin-bottom:14px"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Билет распознан · поля заполнены автоматически, добавлен в сегмент SU 1178.</div>
+          <div class="grid cols-2">
+            <div class="field"><label>Рейс</label><div class="val"><span class="chk">✓</span> SU 1178</div></div>
+            <div class="field"><label>Дата</label><div class="val"><span class="chk">✓</span> 20.09.2026</div></div>
+            <div class="field"><label>Вылет</label><div class="val"><span class="chk">✓</span> SVO 09:25</div></div>
+            <div class="field"><label>Прилёт</label><div class="val"><span class="chk">✓</span> KZN 10:50</div></div>
+            <div class="field"><label>Пассажир</label><div class="val"><span class="chk">✓</span> KOTOVA / MARINA</div></div>
+            <div class="field"><label>Тариф / место</label><div class="val"><span class="chk">✓</span> Эконом · 12A</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid cols-2 section-gap">
+      <div class="card">
+        <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>Отели по туру</div>
+        <table>
+          <thead><tr><th>Город</th><th>Отель</th><th>Даты</th><th>Номеров</th></tr></thead>
+          <tbody>
+            <tr><td><b>Санкт-Петербург</b></td><td>Cosmos Pribaltiyskaya</td><td>11–12 сен</td><td>9</td></tr>
+            <tr><td><b>Москва</b></td><td>Soluxe Hotel</td><td>14–19 сен</td><td>9</td></tr>
+            <tr><td><b>Казань</b></td><td>Korston Royal</td><td>20–21 сен</td><td>9</td></tr>
+            <tr><td><b>Екатеринбург</b></td><td>Hyatt Regency</td><td>26–27 сен</td><td>9</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Бюджет логистики</div>
+        <div class="info-line"><span>Авиа (8 перелётов)</span><b>₽ 2 140 000</b></div>
+        <div class="info-line"><span>Ж/д (4 сегмента)</span><b>₽ 480 000</b></div>
+        <div class="info-line"><span>Отели (54 ночи)</span><b>₽ 1 620 000</b></div>
+        <div class="info-line"><span>Трансферы</span><b>₽ 560 000</b></div>
+        <div class="info-line"><span style="color:var(--text);font-weight:700">Итого</span><b style="font-size:16px">₽ 4 800 000</b></div>
+        <div class="note section-gap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Через партнёрство Smartway/Aviasales B2B — экономия 5–8% и единый закрывающий пакет для бухгалтерии.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TEAM ===== -->
+  <section class="view" id="team">
+    <div class="page-head">
+      <div><h1>Команда тура</h1><p>Роли, уровни доступа, суточные (per diem) и статус в Telegram-боте.</p></div>
+      <div class="ph-actions"><button class="btn btn-primary"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0 .01M20 8v6M23 11h-6"/></svg>Пригласить участника</button></div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Участник</th><th>Роль</th><th>Доступ</th><th>Per diem</th><th>Telegram-бот</th></tr></thead>
+        <tbody>
+          <tr><td><div class="row-flex"><div class="mini-ava">МК</div><span class="name">Марина Котова</span></div></td><td>Тур-менеджер</td><td><span class="badge-s b-accent">владелец</span></td><td>—</td><td><span class="badge-s b-ok">активен</span></td></tr>
+          <tr><td><div class="row-flex"><div class="mini-ava">ДС</div><span class="name">Денис Соколов</span></div></td><td>Road-менеджер</td><td><span class="badge-s b-info">редактор</span></td><td>₽ 3 500/день</td><td><span class="badge-s b-ok">активен</span></td></tr>
+          <tr><td><div class="row-flex"><div class="mini-ava">АП</div><span class="name">Антон Петров</span></div></td><td>FOH-звукорежиссёр</td><td><span class="badge-s b-info">редактор</span></td><td>₽ 3 000/день</td><td><span class="badge-s b-ok">активен</span></td></tr>
+          <tr><td><div class="row-flex"><div class="mini-ava">ИЛ</div><span class="name">Игорь Лебедев</span></div></td><td>Свет</td><td><span class="badge-s b-warn">только чтение</span></td><td>₽ 3 000/день</td><td><span class="badge-s b-ok">активен</span></td></tr>
+          <tr><td><div class="row-flex"><div class="mini-ava">ЕМ</div><span class="name">Елена Морозова</span></div></td><td>Backline / костюмы</td><td><span class="badge-s b-warn">только чтение</span></td><td>₽ 2 500/день</td><td><span class="badge-s b-warn">приглашён</span></td></tr>
+          <tr><td><div class="row-flex"><div class="mini-ava">СК</div><span class="name">Сергей Кузнецов</span></div></td><td>Музыкант · гитара</td><td><span class="badge-s b-warn">только чтение</span></td><td>₽ 5 000/день</td><td><span class="badge-s b-ok">активен</span></td></tr>
+          <tr><td><div class="row-flex"><div class="mini-ava">ВД</div><span class="name">Водитель · автобус</span></div></td><td>Транспорт</td><td><span class="badge-s b-warn">только чтение</span></td><td>₽ 4 000/день</td><td><span class="badge-s b-warn">приглашён</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note section-gap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Места с доступом «только чтение» — бесплатны. Это драйвер виральности: вся команда видит расписание, платит только организатор.</div>
+  </section>
+
+  <!-- ===== AGGREGATOR ===== -->
+  <section class="view" id="aggregator">
+    <div class="page-head">
+      <div><h1>Афиша / Агрегатор событий</h1><p>Единая концертная сетка России из 4 источников с дедупликацией. SEO-витрина и воронка для площадок.</p></div>
+    </div>
+    <div class="filters" id="aggFilters">
+      <span class="chip active" data-f="all">Все источники</span>
+      <span class="chip" data-f="timepad">Timepad</span>
+      <span class="chip" data-f="qtickets">Qtickets</span>
+      <span class="chip" data-f="afisha">Яндекс Афиша</span>
+      <span class="chip" data-f="ticketscloud">Ticketscloud</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Событие</th><th>Город · площадка</th><th>Дата</th><th>Источник</th><th>Дедупликация</th></tr></thead>
+        <tbody id="aggBody">
+          <tr data-src="afisha"><td><b>Кварц — тур «Резонанс»</b></td><td>Москва · Crocus City Hall</td><td>15 сен 2026</td><td><span class="src afisha">Яндекс Афиша</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>склеено из 3 источников</span></td></tr>
+          <tr data-src="ticketscloud"><td><b>Баста — большой концерт</b></td><td>Санкт-Петербург · Ледовый</td><td>19 сен 2026</td><td><span class="src ticketscloud">Ticketscloud</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>уникальное</span></td></tr>
+          <tr data-src="timepad"><td><b>Therr Maitz — Acoustic</b></td><td>Москва · 1930 Moscow</td><td>22 сен 2026</td><td><span class="src timepad">Timepad</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>склеено из 2 источников</span></td></tr>
+          <tr data-src="qtickets"><td><b>Хаски — концерт</b></td><td>Екатеринбург · Tele-Club</td><td>24 сен 2026</td><td><span class="src qtickets">Qtickets</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>уникальное</span></td></tr>
+          <tr data-src="afisha"><td><b>Леонид Агутин — юбилей</b></td><td>Казань · Татнефть Арена</td><td>20 сен 2026</td><td><span class="src afisha">Яндекс Афиша</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>склеено из 2 источников</span></td></tr>
+          <tr data-src="timepad"><td><b>Стендап-фест «Открытый микрофон»</b></td><td>Новосибирск · Дом офицеров</td><td>27 сен 2026</td><td><span class="src timepad">Timepad</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>уникальное</span></td></tr>
+          <tr data-src="qtickets"><td><b>Zivert — большой сольный</b></td><td>Краснодар · Баскет-Холл</td><td>30 сен 2026</td><td><span class="src qtickets">Qtickets</span></td><td><span class="dedup"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>склеено из 2 источников</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid cols-3 section-gap">
+      <div class="card kpi"><div class="k-val">28 940</div><div class="k-lbl">событий агрегировано</div></div>
+      <div class="card kpi"><div class="k-val">11,2%</div><div class="k-lbl">дублей склеено (дедуп)</div></div>
+      <div class="card kpi"><div class="k-val">4</div><div class="k-lbl">источника подключено</div></div>
+    </div>
+  </section>
+
+  <!-- ===== VENUES ===== -->
+  <section class="view" id="venues">
+    <div class="page-head">
+      <div><h1>Каталог площадок России</h1><p>2 100+ залов с геоданными (PostGIS), техническими паками и проверкой радиусных ограничений.</p></div>
+    </div>
+    <div class="map-wrap">
+      <div class="map" id="map">
+        <svg class="route-svg" id="routeSvg"></svg>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Crocus City Hall</div>
+          <div class="info-line"><span>Город</span><b>Москва</b></div>
+          <div class="info-line"><span>Вместимость</span><b>7 200</b></div>
+          <div class="info-line"><span>Тип сцены</span><b>Концертный зал</b></div>
+          <div class="info-line"><span>Технический пак</span><b style="color:var(--accent)">★ премиум-профиль</b></div>
+          <div class="info-line"><span>Грузовой въезд</span><b>есть, со двора</b></div>
+        </div>
+        <div class="card radius-demo">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Проверка radius clause</div>
+          <p style="font-size:12.5px;color:var(--text-dim)">Артист не может выступать в радиусе <b>150 км</b> в течение <b>30 дней</b> вокруг шоу. Проверим новую дату в Туле (170 км от Москвы).</p>
+          <button class="btn btn-primary" id="radiusBtn" style="margin-top:12px"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Проверить ограничение</button>
+          <div class="radius-result pass" id="radiusResult"><b>✓ Конфликтов нет.</b> Тула в 170 км — вне радиуса 150 км. Дату можно подтверждать. (Расчёт PostGIS ST_DWithin)</div>
+        </div>
+      </div>
+    </div>
+    <div class="card section-gap">
+      <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Площадки в каталоге</div>
+      <table>
+        <thead><tr><th>Площадка</th><th>Город</th><th>Вместимость</th><th>Профиль</th></tr></thead>
+        <tbody>
+          <tr><td><b>Crocus City Hall</b></td><td>Москва</td><td>7 200</td><td><span class="badge-s b-accent">★ премиум</span></td></tr>
+          <tr><td><b>Ледовый дворец</b></td><td>Санкт-Петербург</td><td>12 300</td><td><span class="badge-s b-accent">★ премиум</span></td></tr>
+          <tr><td><b>Татнефть Арена</b></td><td>Казань</td><td>8 900</td><td><span class="tag">базовый</span></td></tr>
+          <tr><td><b>МТС Live Холл</b></td><td>Екатеринбург</td><td>5 000</td><td><span class="badge-s b-accent">★ премиум</span></td></tr>
+          <tr><td><b>Дворец спорта «Сибирь»</b></td><td>Новосибирск</td><td>7 400</td><td><span class="tag">базовый</span></td></tr>
+          <tr><td><b>Баскет-Холл</b></td><td>Краснодар</td><td>7 500</td><td><span class="tag">базовый</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== BOT ===== -->
+  <section class="view" id="bot">
+    <div class="page-head">
+      <div><h1>Telegram-бот дорожной команды</h1><p>Бесплатный read-only доступ для всей команды: расписание дня, уведомления об изменениях, отели и трансферы.</p></div>
+    </div>
+    <div class="grid cols-2">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="tg-head"><div class="ava">Г</div><div><div class="tg-name">Гастроль · бот тура</div><div class="tg-status">бот · «Резонанс» 2026</div></div></div>
+        <div class="tg-body">
+          <div class="msg bot">Доброе утро, команда! 👋 Сегодня <b>18 сентября</b>, Москва, Crocus City Hall.<div class="mt">08:00</div></div>
+          <div class="msg bot"><b>Lobby call 08:30</b> · трансфер 09:00 от отеля Soluxe. Возьмите бейджи.<div class="mt">08:00</div></div>
+          <div class="msg me">/расписание<div class="mt">08:12</div></div>
+          <div class="msg bot">📋 <b>План на день:</b><br>10:00 Load-in<br>16:00 Саундчек<br>18:00 Doors<br>20:00 Сет<br>22:30 Curfew<div class="mt">08:12</div></div>
+          <div class="msg bot">⚠️ <b>Изменение:</b> саундчек сдвинут с 15:00 на <b>16:00</b> по просьбе площадки.<div class="mt">11:40</div>
+            <div class="tg-kbd"><span class="tg-btn">📋 Расписание</span><span class="tg-btn">🏨 Отель</span><span class="tg-btn">🚐 Трансфер</span></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Возможности бота</div>
+          <div class="lrow"><span class="badge-s b-ok">/расписание</span><div class="l-main"><div class="l-t" style="font-size:13px">Суточный лист в один тап</div></div></div>
+          <div class="lrow"><span class="badge-s b-info">push</span><div class="l-main"><div class="l-t" style="font-size:13px">Мгновенные уведомления об изменениях тайминга</div></div></div>
+          <div class="lrow"><span class="badge-s b-accent">/отель</span><div class="l-main"><div class="l-t" style="font-size:13px">Адрес, бронь, номер комнаты</div></div></div>
+          <div class="lrow"><span class="badge-s b-warn">/трансфер</span><div class="l-main"><div class="l-t" style="font-size:13px">Время подачи, водитель, телефон</div></div></div>
+        </div>
+        <div class="card section-gap">
+          <div class="card-title"><svg class="ico" viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/></svg>Эффект для бизнеса</div>
+          <div class="info-line"><span>Охват команды</span><b>12 из 14 в боте</b></div>
+          <div class="info-line"><span>Виральный коэффициент</span><b>каждый тур = +новые TM</b></div>
+          <div class="info-line"><span>Снижение CAC</span><b>команда приходит бесплатно</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRICING ===== -->
+  <section class="view" id="pricing">
+    <div class="page-head">
+      <div><h1>Тарифы</h1><p>SaaS-подписка + бесплатные места команды. Цены валидированы против Master Tour ($65/мес ≈ 5–6 тыс ₽).</p></div>
+    </div>
+    <div class="grid cols-4">
+      <div class="price-card">
+        <div class="pc-name">Команда</div>
+        <div class="pc-price">0 <small>₽</small></div>
+        <div class="pc-desc">Read-only доступ для дорожной команды через Telegram-бот.</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Расписание дня</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Push-уведомления</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Отель и трансферы</li>
+        </ul>
+        <button class="btn btn-ghost" style="justify-content:center">Бесплатно</button>
+      </div>
+      <div class="price-card">
+        <div class="pc-name">Артист</div>
+        <div class="pc-price">990 <small>₽/мес</small></div>
+        <div class="pc-desc">Для самозанятых и начинающих артистов (залы 500–1000).</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Календарь и day sheets</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>До 2 туров одновременно</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Базовая логистика</li>
+        </ul>
+        <button class="btn btn-ghost" style="justify-content:center">Выбрать</button>
+      </div>
+      <div class="price-card pop">
+        <div class="pop-tag">Популярный</div>
+        <div class="pc-name">Тур-менеджер</div>
+        <div class="pc-price">3 900 <small>₽/мес</small></div>
+        <div class="pc-desc">Полная замена Google-таблиц + логистика и парсинг билетов.</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Безлимит туров</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Парсинг PDF-билетов</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Telegram-бот команды</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Каталог площадок</li>
+        </ul>
+        <button class="btn btn-primary" style="justify-content:center">Выбрать</button>
+      </div>
+      <div class="price-card">
+        <div class="pc-name">Агентство</div>
+        <div class="pc-price">от 12 900 <small>₽/мес</small></div>
+        <div class="pc-desc">Командные места, несколько артистов, аналитика и API.</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Командные роли</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Radius clause проверки</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Премиум-профили площадок</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Приоритетная поддержка</li>
+        </ul>
+        <button class="btn btn-ghost" style="justify-content:center">Связаться</button>
+      </div>
+    </div>
+    <div class="note section-gap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Дополнительно: транзакционная комиссия 2–8% с тревел-бронирований (Smartway/Aviasales B2B) и Data SaaS — продажа премиум-профилей и аналитики по площадкам.</div>
+  </section>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+/* ---------- THEME ---------- */
+const html=document.documentElement, themeBtn=document.getElementById('themeBtn'), themeIcon=document.getElementById('themeIcon');
+const sun='<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>';
+const moon='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+themeBtn.onclick=()=>{const l=html.getAttribute('data-theme')==='light';html.setAttribute('data-theme',l?'dark':'light');themeIcon.innerHTML=l?moon:sun;};
+
+/* ---------- NAV ---------- */
+const views=document.querySelectorAll('.view'), items=document.querySelectorAll('.nav-item'), crumb=document.getElementById('crumbView');
+function go(v){
+  views.forEach(s=>s.classList.toggle('active',s.id===v));
+  items.forEach(i=>i.classList.toggle('active',i.dataset.view===v));
+  const it=[...items].find(i=>i.dataset.view===v); if(it) crumb.textContent=it.querySelector('span').textContent;
+  document.querySelector('.content').scrollTop=0;
+}
+items.forEach(i=>i.onclick=()=>go(i.dataset.view));
+document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
+
+/* ---------- CALENDAR (September 2026) ---------- */
+const shows={12:['СПб · Ледовый','confirmed'],15:['Москва · Crocus','confirmed'],18:['Москва · доп. шоу','confirmed'],
+  20:['Казань · Татнефть','confirmed'],23:['Н.Новгород · hold','hold'],26:['Екб · МТС Live','confirmed'],28:['Новосибирск','announced']};
+const travel={11:'→ переезд СПб',14:'→ переезд Мск',19:'→ перелёт Казань',25:'→ перелёт Екб'};
+const calBody=document.getElementById('calBody');
+let firstDow=2; // Sep 1 2026 = Tuesday (Mon=1)
+let cells=[];
+for(let i=1;i<firstDow;i++)cells.push({mute:true,n:31-(firstDow-1-i)});
+for(let d=1;d<=30;d++)cells.push({n:d});
+const total=Math.ceil(cells.length/7)*7;
+for(let i=cells.length;i<total;i++)cells.push({mute:true,n:i-cells.length+1});
+calBody.innerHTML=cells.map(c=>{
+  let ev='';
+  if(!c.mute&&shows[c.n])ev+=`<div class="ev ${shows[c.n][1]}" onclick="go('daysheet')">${shows[c.n][0]}</div>`;
+  if(!c.mute&&travel[c.n])ev+=`<div class="ev travel">${travel[c.n]}</div>`;
+  const today=(!c.mute&&c.n===18)?' today':'';
+  return `<div class="cal-cell${c.mute?' muted':''}${today}"><div class="dn">${c.n}</div>${ev}</div>`;
+}).join('');
+
+/* ---------- ROUTING ---------- */
+const route=[['СПб','12 сен','Ледовый дворец','var(--ok)'],['Москва','15 сен','Crocus City Hall','var(--ok)'],
+['Москва','18 сен','доп. шоу · sold out','var(--ok)'],['Казань','20 сен','Татнефть Арена','var(--ok)'],
+['Н.Новгород','23 сен','КРК «Нагорный»','var(--warn)'],['Екатеринбург','26 сен','МТС Live Холл','var(--ok)'],
+['Новосибирск','28 сен','ДС «Сибирь»','var(--info)']];
+document.getElementById('routing').innerHTML=route.map(r=>`<div class="route-stop">
+  <div class="line"></div><div class="pin"><span class="dot" style="background:${r[3]}"></span></div>
+  <div class="route-card"><div class="rc-city">${r[0]}</div><div class="rc-date">${r[1]}</div><div class="rc-venue">${r[2]}</div></div></div>`).join('');
+
+/* ---------- PARSE TICKET ---------- */
+document.getElementById('parseBox').onclick=()=>{document.getElementById('parseResult').classList.add('show');};
+
+/* ---------- AGGREGATOR FILTER ---------- */
+document.querySelectorAll('#aggFilters .chip').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('#aggFilters .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+  const f=c.dataset.f;
+  document.querySelectorAll('#aggBody tr').forEach(tr=>tr.style.display=(f==='all'||tr.dataset.src===f)?'':'none');
+});
+
+/* ---------- RADIUS ---------- */
+document.getElementById('radiusBtn').onclick=()=>document.getElementById('radiusResult').classList.add('show');
+
+/* ---------- MAP PINS ---------- */
+const venues=[['Москва',46,58,1],['СПб',38,40,1],['Казань',57,60,0],['Н.Новгород',52,57,0],
+['Екатеринбург',67,54,1],['Новосибирск',79,64,0],['Краснодар',40,80,0],['Сочи',43,87,0]];
+const map=document.getElementById('map');
+venues.forEach(v=>{const p=document.createElement('div');p.className='map-pin'+(v[3]?' cap-l':'');
+  p.style.left=v[1]+'%';p.style.top=v[2]+'%';
+  p.innerHTML=`<div class="pdot"></div><div class="plabel">${v[0]}</div>`;map.appendChild(p);});
+// route line through tour cities
+const order=['Москва','СПб','Казань','Н.Новгород','Екатеринбург','Новосибирск'];
+const svg=document.getElementById('routeSvg');
+let pts=order.map(n=>venues.find(v=>v[0]===n)).map(v=>`${v[1]},${v[2]}`);
+svg.innerHTML=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="0.5" stroke-dasharray="2 1.5" opacity="0.6" vector-effect="non-scaling-stroke"/>`;
+svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
+</script>
+</body>
+</html>
