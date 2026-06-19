@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e1c">
+<meta name="description" content="ЧМ-2026: группы, плей-офф и прогноз. Живые результаты с football-data.org и удобный вид на телефоне.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:title" content="ЧМ-2026 · Группы и плей-офф">
+<meta property="og:description" content="48 команд, 12 групп, 104 матча. Живые результаты + прогноз сетки.">
+<meta property="og:type" content="website">
+<title>ЧМ-2026 · Группы и плей-офф</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e1c;
+    --bg2:#0f1428;
+    --surface:#151c34;
+    --surface2:#1b2440;
+    --line:#262f50;
+    --txt:#eef1ff;
+    --muted:#8a93b8;
+    --pink:#ff2d78;
+    --cyan:#1fd3da;
+    --gold:#ffc94b;
+    --green:#22c477;
+    --amber:#ffab3d;
+    --sat:env(safe-area-inset-top);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(255,45,120,.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(31,211,218,.12), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--txt);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:calc(60px + env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  .wrap{
+    max-width:1080px;margin:0 auto;
+    padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));
+  }
+
+  /* Header */
+  header{padding:calc(28px + var(--sat)) 0 18px}
+  .kicker{
+    font-family:'Oswald';text-transform:uppercase;letter-spacing:.28em;
+    font-size:12px;color:var(--cyan);font-weight:600;margin-bottom:10px;
+  }
+  h1{
+    font-family:'Oswald';font-weight:700;line-height:.92;
+    font-size:clamp(40px,11vw,86px);text-transform:uppercase;letter-spacing:-.01em;
+  }
+  h1 .yr{
+    background:linear-gradient(92deg,var(--pink),var(--gold) 60%,var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{color:var(--muted);font-size:15px;margin-top:12px;max-width:640px}
+  .hosts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;font-size:14px;color:var(--txt)}
+  .hosts span{display:inline-flex;align-items:center;gap:6px;background:var(--surface);
+    border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+  .note{
+    margin-top:18px;font-size:13px;color:var(--muted);
+    border-left:3px solid var(--gold);padding:8px 14px;background:rgba(255,201,75,.06);
+    border-radius:0 8px 8px 0;
+  }
+  .note b{color:var(--gold)}
+
+  /* Tabs — horizontally scrollable on phones, no layout shift */
+  .tabs{
+    display:flex;gap:8px;margin:22px 0 18px;position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg,var(--bg) 72%,transparent);
+    padding:12px 0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    font-family:'Oswald';text-transform:uppercase;letter-spacing:.06em;font-size:14px;
+    font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line);
+    padding:11px 18px;border-radius:10px;cursor:pointer;transition:.18s;flex:0 0 auto;
+    white-space:nowrap;min-height:44px;
+  }
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:var(--bg);background:linear-gradient(92deg,var(--pink),var(--gold));border-color:transparent}
+
+  .panel{display:none;animation:fade .35s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.panel{animation:none}}
+
+  /* Live status bar */
+  .livebar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--muted);
+  }
+  .livebar .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+  .livebar.live .dot{background:var(--green);box-shadow:0 0 0 4px rgba(34,196,119,.18);animation:pulse 2s infinite}
+  .livebar.err .dot{background:var(--amber)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .livebar .txt b{color:var(--txt)}
+  .livebar .refresh{
+    margin-left:auto;font-family:'Oswald';text-transform:uppercase;letter-spacing:.06em;
+    font-size:12px;font-weight:600;color:var(--cyan);background:var(--surface2);
+    border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;
+    min-height:38px;
+  }
+  .livebar .refresh:active{transform:scale(.97)}
+  .livebar .refresh[disabled]{opacity:.5;cursor:default}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:18px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .lg-q i{background:var(--green)}
+  .lg-3 i{background:var(--amber)}
+  .lg-out i{background:var(--line)}
+
+  /* Group grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .card{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
+    border-radius:16px;overflow:hidden}
+  .ghead{display:flex;align-items:baseline;justify-content:space-between;padding:14px 16px 10px;gap:10px}
+  .ghead .gl{font-family:'Oswald';font-weight:700;font-size:22px;text-transform:uppercase}
+  .ghead .gl small{color:var(--cyan);font-size:13px;letter-spacing:.1em;margin-left:6px}
+  .ghead .status{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;text-align:right}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+    font-weight:600;text-align:right;padding:4px 16px;border-bottom:1px solid var(--line)}
+  th.name{text-align:left}
+  td{padding:10px 16px;border-bottom:1px solid rgba(38,47,80,.5);text-align:right}
+  tr:last-child td{border-bottom:none}
+  td.name{text-align:left;display:flex;align-items:center;gap:9px;font-weight:500}
+  td.name .fl{font-size:18px;line-height:1}
+  td.pts{font-family:'JetBrains Mono';font-weight:700;color:var(--txt)}
+  td.gd{font-family:'JetBrains Mono';color:var(--muted)}
+  tr.q td.name{font-weight:600}
+  tr.q{background:linear-gradient(90deg,rgba(34,196,119,.13),transparent)}
+  tr.q td.name::before{content:"";width:4px;height:18px;border-radius:2px;background:var(--green);
+    display:inline-block;margin-right:-3px}
+  tr.t3{background:linear-gradient(90deg,rgba(255,171,61,.10),transparent)}
+  tr.t3 td.name::before{content:"";width:4px;height:18px;border-radius:2px;background:var(--amber);
+    display:inline-block;margin-right:-3px}
+  tr.out td.name::before{content:"";width:4px;height:18px;border-radius:2px;background:var(--line);
+    display:inline-block;margin-right:-3px}
+
+  /* Bracket */
+  .scrollhint{display:none;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .bracket-scroll{overflow-x:auto;padding-bottom:14px;-webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+  .bracket{display:flex;gap:22px;min-width:1180px;padding:6px 2px}
+  .round{display:flex;flex-direction:column;justify-content:space-around;gap:12px;flex:1;min-width:172px;
+    scroll-snap-align:start}
+  .round-title{font-family:'Oswald';text-transform:uppercase;letter-spacing:.1em;font-size:12px;
+    color:var(--cyan);text-align:center;margin-bottom:6px;font-weight:600}
+  .tie{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .slot{display:flex;align-items:center;gap:8px;padding:9px 10px;font-size:13px}
+  .slot+.slot{border-top:1px solid var(--line)}
+  .slot .fl{font-size:15px}
+  .slot .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot.win{background:linear-gradient(90deg,rgba(34,196,119,.16),transparent);font-weight:600}
+  .slot.win .nm{color:#bff3d6}
+  .slot.lose{color:var(--muted);opacity:.6}
+  .final-tie{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,201,75,.3),0 8px 30px rgba(255,201,75,.12)}
+  .champ{margin-top:14px;text-align:center}
+  .champ .cap{font-family:'Oswald';text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:var(--gold)}
+  .champ .who{font-family:'Oswald';font-size:30px;font-weight:700;margin-top:4px}
+  .champ .who .fl{font-size:28px}
+
+  /* Forecast panel cards */
+  .fcast{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:6px}
+  .fc{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
+    border-radius:16px;padding:18px}
+  .fc .rk{font-family:'Oswald';font-size:34px;font-weight:700;line-height:1}
+  .fc .rk.g{color:var(--gold)} .fc .rk.s{color:#cfd6f0} .fc .rk.b{color:#d9935a}
+  .fc h3{font-family:'Oswald';font-size:20px;font-weight:600;margin:8px 0 4px;text-transform:uppercase}
+  .fc p{font-size:13px;color:var(--muted)}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .pill{font-size:12px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;
+    padding:7px 12px;color:var(--muted)}
+  .pill b{color:var(--txt)}
+
+  footer{margin-top:40px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+
+  @media(max-width:560px){
+    header{padding-top:calc(20px + var(--sat))}
+    .sub{font-size:14px}
+    .grid{grid-template-columns:1fr}
+    .scrollhint{display:block}
+    td{padding:11px 14px}
+    th{padding:4px 14px}
+    td.name{gap:8px}
+    .tab{padding:10px 15px;font-size:13px}
+    .fcast{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">FIFA World Cup · 11 июня – 19 июля</div>
+    <h1>Чемпионат мира<br><span class="yr">2026</span></h1>
+    <p class="sub">48 команд, 12 групп, 104 матча. Впервые из группы выходят первые две команды плюс 8 лучших третьих — итого 32 сборные в плей-офф.</p>
+    <div class="hosts">
+      <span>🇺🇸 США</span><span>🇨🇦 Канада</span><span>🇲🇽 Мексика</span>
+    </div>
+    <div class="note"><b>Как читать:</b> таблицы групп подгружаются в реальном времени, если подключён ключ API (см. ниже). Плей-офф и блок «кто победит» — это <b>прогноз</b> на основе посева ФИФА и формы, а не факт.</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-p="groups">Группы</button>
+    <button class="tab" data-p="bracket">Плей-офф</button>
+    <button class="tab" data-p="forecast">Кто победит</button>
+  </div>
+
+  <!-- ===== GROUPS ===== -->
+  <section class="panel active" id="groups">
+    <div class="livebar" id="livebar">
+      <span class="dot"></span>
+      <span class="txt" id="liveText">Загрузка данных…</span>
+      <button class="refresh" id="refreshBtn">Обновить</button>
+    </div>
+    <div class="legend">
+      <span class="lg-q"><i></i>выходит напрямую (1–2 место)</span>
+      <span class="lg-3"><i></i>претендент в лучшие третьи</span>
+      <span class="lg-out"><i></i>вылет по прогнозу</span>
+    </div>
+    <div class="grid" id="groupGrid"></div>
+  </section>
+
+  <!-- ===== BRACKET ===== -->
+  <section class="panel" id="bracket">
+    <div class="legend"><span class="lg-q"><i></i>проходит дальше (прогноз)</span></div>
+    <div class="scrollhint">← листайте сетку вбок →</div>
+    <div class="bracket-scroll">
+      <div class="bracket" id="bracketEl"></div>
+    </div>
+    <div class="note" style="margin-top:16px">Сетку 1/16 ФИФА формирует по позициям групп и тому, из каких групп вышли восемь третьих команд. Здесь показан <b>правдоподобный сценарий</b> пар и проходов — реальные пары определятся после группового этапа.</div>
+  </section>
+
+  <!-- ===== FORECAST ===== -->
+  <section class="panel" id="forecast">
+    <div class="fcast">
+      <div class="fc"><div class="rk g">🥇</div><h3>🇪🇸 Испания</h3><p>Чемпион по прогнозу. Действующие победители Евро, глубокий состав и контроль мяча — в финале против Франции.</p></div>
+      <div class="fc"><div class="rk s">🥈</div><h3>🇫🇷 Франция</h3><p>Финалист. Снова доходит до решающего матча за счёт класса атаки и опыта.</p></div>
+      <div class="fc"><div class="rk b">🥉</div><h3>🇧🇷 Бразилия</h3><p>Бронза. Сильный, но спотыкается в полуфинале на Испании.</p></div>
+    </div>
+    <div class="pillrow">
+      <span class="pill">Тёмная лошадка: <b>🇺🇸 США</b> — хозяева до полуфинала</span>
+      <span class="pill">Главный фаворит букмекеров: <b>🇦🇷 Аргентина</b></span>
+      <span class="pill">Сенсация группы: <b>🏴󠁧󠁢󠁳󠁣󠁴󠁿 Шотландия</b> обыграла фаворитов</span>
+      <span class="pill">Лучший бомбардир (прогноз): <b>🇫🇷 Мбаппе</b></span>
+    </div>
+    <div class="note" style="margin-top:22px">Это субъективный прогноз, а не предсказание. На таком турнире одна серия пенальти переворачивает всю сетку — поэтому относитесь к нему как к сценарию для обсуждения.</div>
+  </section>
+
+  <footer>
+    Прогнозы построены на посеве, рейтинге ФИФА и результатах стартовых туров. Живые результаты — football-data.org. Источники: FIFA, ESPN, NBC Sports, UEFA.
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   ЖИВЫЕ ДАННЫЕ
+   GitHub Pages — статика, поэтому результаты тянутся прямо из
+   браузера с бесплатного API football-data.org.
+
+   Чтобы включить live-режим:
+   1. Зарегистрируйтесь на https://www.football-data.org/client/register
+   2. Скопируйте полученный токен и вставьте в apiKey ниже.
+   3. Запушьте — страница начнёт обновлять группы автоматически.
+
+   Без ключа (или если API недоступен / не покрывает турнир)
+   страница показывает встроенный снимок данных и честно об этом
+   пишет в строке статуса. Прогноз сетки и финала всегда локальный.
+   ============================================================ */
+const LIVE = {
+  enabled:   true,
+  apiKey:    "",          // ← вставьте токен football-data.org
+  competition:"WC",       // World Cup
+  corsProxy: "",          // напр. "https://corsproxy.io/?url=" если браузер блокирует прямой запрос
+  refreshMs: 60000        // автообновление раз в минуту
+};
+
+// ---- DICTIONARIES ----
+const fl = {
+ Mexico:"🇲🇽",Korea:"🇰🇷",Czechia:"🇨🇿",SouthAfrica:"🇿🇦",Switzerland:"🇨🇭",Canada:"🇨🇦",Qatar:"🇶🇦",
+ Bosnia:"🇧🇦",Brazil:"🇧🇷",Scotland:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",Morocco:"🇲🇦",Haiti:"🇭🇹",USA:"🇺🇸",Australia:"🇦🇺",Turkiye:"🇹🇷",
+ Paraguay:"🇵🇾",Germany:"🇩🇪",Curacao:"🇨🇼",IvoryCoast:"🇨🇮",Ecuador:"🇪🇨",Netherlands:"🇳🇱",Japan:"🇯🇵",
+ Sweden:"🇸🇪",Tunisia:"🇹🇳",Belgium:"🇧🇪",Egypt:"🇪🇬",Iran:"🇮🇷",NewZealand:"🇳🇿",Spain:"🇪🇸",CapeVerde:"🇨🇻",
+ Saudi:"🇸🇦",Uruguay:"🇺🇾",France:"🇫🇷",Senegal:"🇸🇳",Iraq:"🇮🇶",Norway:"🇳🇴",Argentina:"🇦🇷",Algeria:"🇩🇿",
+ Austria:"🇦🇹",Jordan:"🇯🇴",Portugal:"🇵🇹",DRCongo:"🇨🇩",Uzbekistan:"🇺🇿",Colombia:"🇨🇴",England:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+ Croatia:"🇭🇷",Ghana:"🇬🇭",Panama:"🇵🇦"
+};
+const nm = {
+ Mexico:"Мексика",Korea:"Юж. Корея",Czechia:"Чехия",SouthAfrica:"ЮАР",Switzerland:"Швейцария",Canada:"Канада",
+ Qatar:"Катар",Bosnia:"Босния",Brazil:"Бразилия",Scotland:"Шотландия",Morocco:"Марокко",Haiti:"Гаити",
+ USA:"США",Australia:"Австралия",Turkiye:"Турция",Paraguay:"Парагвай",Germany:"Германия",Curacao:"Кюрасао",
+ IvoryCoast:"Кот-д'Ивуар",Ecuador:"Эквадор",Netherlands:"Нидерланды",Japan:"Япония",Sweden:"Швеция",
+ Tunisia:"Тунис",Belgium:"Бельгия",Egypt:"Египет",Iran:"Иран",NewZealand:"Н. Зеландия",Spain:"Испания",
+ CapeVerde:"Кабо-Верде",Saudi:"Сауд. Аравия",Uruguay:"Уругвай",France:"Франция",Senegal:"Сенегал",
+ Iraq:"Ирак",Norway:"Норвегия",Argentina:"Аргентина",Algeria:"Алжир",Austria:"Австрия",Jordan:"Иордания",
+ Portugal:"Португалия",DRCongo:"ДР Конго",Uzbekistan:"Узбекистан",Colombia:"Колумбия",England:"Англия",
+ Croatia:"Хорватия",Ghana:"Гана",Panama:"Панама"
+};
+// сопоставление команд API → наши ключи (по TLA-коду и по названию)
+const apiMap = {
+ Mexico:{tla:"MEX",n:["mexico"]}, Korea:{tla:"KOR",n:["southkorea","korearepublic","korea"]},
+ Czechia:{tla:"CZE",n:["czechia","czechrepublic"]}, SouthAfrica:{tla:"RSA",n:["southafrica"]},
+ Switzerland:{tla:"SUI",n:["switzerland"]}, Canada:{tla:"CAN",n:["canada"]}, Qatar:{tla:"QAT",n:["qatar"]},
+ Bosnia:{tla:"BIH",n:["bosniaandherzegovina","bosnia"]}, Brazil:{tla:"BRA",n:["brazil"]},
+ Scotland:{tla:"SCO",n:["scotland"]}, Morocco:{tla:"MAR",n:["morocco"]}, Haiti:{tla:"HAI",n:["haiti"]},
+ USA:{tla:"USA",n:["unitedstates","unitedstatesofamerica","usa"]}, Australia:{tla:"AUS",n:["australia"]},
+ Turkiye:{tla:"TUR",n:["turkiye","turkey"]}, Paraguay:{tla:"PAR",n:["paraguay"]},
+ Germany:{tla:"GER",n:["germany"]}, Curacao:{tla:"CUW",n:["curacao"]},
+ IvoryCoast:{tla:"CIV",n:["ivorycoast","cotedivoire"]}, Ecuador:{tla:"ECU",n:["ecuador"]},
+ Netherlands:{tla:"NED",n:["netherlands"]}, Japan:{tla:"JPN",n:["japan"]}, Sweden:{tla:"SWE",n:["sweden"]},
+ Tunisia:{tla:"TUN",n:["tunisia"]}, Belgium:{tla:"BEL",n:["belgium"]}, Egypt:{tla:"EGY",n:["egypt"]},
+ Iran:{tla:"IRN",n:["iran","iranislamicrepublic"]}, NewZealand:{tla:"NZL",n:["newzealand"]},
+ Spain:{tla:"ESP",n:["spain"]}, CapeVerde:{tla:"CPV",n:["capeverde","caboverde"]},
+ Saudi:{tla:"KSA",n:["saudiarabia"]}, Uruguay:{tla:"URU",n:["uruguay"]}, France:{tla:"FRA",n:["france"]},
+ Senegal:{tla:"SEN",n:["senegal"]}, Iraq:{tla:"IRQ",n:["iraq"]}, Norway:{tla:"NOR",n:["norway"]},
+ Argentina:{tla:"ARG",n:["argentina"]}, Algeria:{tla:"ALG",n:["algeria"]}, Austria:{tla:"AUT",n:["austria"]},
+ Jordan:{tla:"JOR",n:["jordan"]}, Portugal:{tla:"POR",n:["portugal"]},
+ DRCongo:{tla:"COD",n:["drcongo","congodr","democraticrepublicofcongo","democraticrepublicofthecongo"]},
+ Uzbekistan:{tla:"UZB",n:["uzbekistan"]}, Colombia:{tla:"COL",n:["colombia"]},
+ England:{tla:"ENG",n:["england"]}, Croatia:{tla:"CRO",n:["croatia"]}, Ghana:{tla:"GHA",n:["ghana"]},
+ Panama:{tla:"PAN",n:["panama"]}
+};
+const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z]/g,"");
+const tlaToKey = {}, nameToKey = {};
+for(const [k,v] of Object.entries(apiMap)){
+  tlaToKey[v.tla] = k;
+  v.n.forEach(n => nameToKey[n] = k);
+  nameToKey[norm(nm[k])] = k; // ещё и русское название на всякий случай
+}
+function matchKey(team){
+  if(!team) return null;
+  if(team.tla && tlaToKey[team.tla]) return tlaToKey[team.tla];
+  return nameToKey[norm(team.shortName)] || nameToKey[norm(team.name)] || null;
+}
+
+// ---- GROUP SNAPSHOT (fallback) ----
+// pts/gd — реальные на момент снимка; status — прогноз (q/t3/out)
+const groups = {
+ A:{played:"снимок · 1-й тур", rows:[
+   ["Mexico",3,"+2","q"],["Korea",3,"+1","q"],["Czechia",0,"-1","t3"],["SouthAfrica",0,"-2","out"]]},
+ B:{played:"снимок · 1-й тур", rows:[
+   ["Switzerland",1,"0","q"],["Canada",1,"0","q"],["Qatar",1,"0","out"],["Bosnia",1,"0","out"]]},
+ C:{played:"снимок · 1-й тур", rows:[
+   ["Brazil",1,"0","q"],["Scotland",3,"+1","q"],["Morocco",1,"0","t3"],["Haiti",0,"-1","out"]]},
+ D:{played:"снимок · 1-й тур", rows:[
+   ["USA",3,"+3","q"],["Turkiye",0,"-1","q"],["Australia",3,"+2","t3"],["Paraguay",0,"-3","out"]]},
+ E:{played:"снимок · 1-й тур", rows:[
+   ["Germany",3,"+6","q"],["IvoryCoast",3,"+1","q"],["Ecuador",0,"-1","t3"],["Curacao",0,"-6","out"]]},
+ F:{played:"снимок · 1-й тур", rows:[
+   ["Netherlands",1,"0","q"],["Japan",1,"0","q"],["Sweden",0,"0","out"],["Tunisia",0,"0","out"]]},
+ G:{played:"стартует", rows:[
+   ["Belgium","–","","q"],["Egypt","–","","q"],["Iran","–","","t3"],["NewZealand","–","","out"]]},
+ H:{played:"стартует", rows:[
+   ["Spain","–","","q"],["Uruguay","–","","q"],["CapeVerde","–","","out"],["Saudi","–","","out"]]},
+ I:{played:"стартует", rows:[
+   ["France","–","","q"],["Senegal","–","","q"],["Norway","–","","t3"],["Iraq","–","","out"]]},
+ J:{played:"стартует", rows:[
+   ["Argentina","–","","q"],["Austria","–","","q"],["Algeria","–","","t3"],["Jordan","–","","out"]]},
+ K:{played:"стартует", rows:[
+   ["Portugal","–","","q"],["Colombia","–","","q"],["Uzbekistan","–","","t3"],["DRCongo","–","","out"]]},
+ L:{played:"стартует", rows:[
+   ["England","–","","q"],["Croatia","–","","q"],["Ghana","–","","t3"],["Panama","–","","out"]]}
+};
+
+const grid = document.getElementById('groupGrid');
+function renderGroups(){
+  grid.innerHTML = "";
+  for(const [g,data] of Object.entries(groups)){
+    const rows = data.rows.map(r=>`
+      <tr class="${r[3]}">
+        <td class="name"><span class="fl">${fl[r[0]]}</span>${nm[r[0]]}</td>
+        <td class="pts">${r[1]}</td>
+        <td class="gd">${r[2]}</td>
+      </tr>`).join('');
+    grid.insertAdjacentHTML('beforeend',`
+      <div class="card">
+        <div class="ghead">
+          <div class="gl">Группа <small>${g}</small></div>
+          <div class="status">${data.played}</div>
+        </div>
+        <table>
+          <tr><th class="name">Сборная</th><th>Очки</th><th>Разн.</th></tr>
+          ${rows}
+        </table>
+      </div>`);
+  }
+}
+
+// ---- LIVE FETCH + MERGE ----
+const livebar = document.getElementById('livebar');
+const liveText = document.getElementById('liveText');
+const refreshBtn = document.getElementById('refreshBtn');
+
+function setBar(state, html){
+  livebar.classList.remove('live','err');
+  if(state) livebar.classList.add(state);
+  liveText.innerHTML = html;
+}
+
+async function fetchLive(){
+  if(!LIVE.enabled) return null;
+  if(!LIVE.apiKey){ const e=new Error('no-key'); e.code='no-key'; throw e; }
+  const base = `https://api.football-data.org/v4/competitions/${LIVE.competition}/standings`;
+  const url  = LIVE.corsProxy ? LIVE.corsProxy + encodeURIComponent(base) : base;
+  const res  = await fetch(url, { headers:{ 'X-Auth-Token': LIVE.apiKey } });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return res.json();
+}
+
+function applyLive(json){
+  // строим карту key -> {pts, gd, played}
+  const live = {};
+  (json.standings||[]).filter(s=>s.type==='TOTAL').forEach(s=>{
+    (s.table||[]).forEach(t=>{
+      const key = matchKey(t.team);
+      if(!key) return;
+      live[key] = { pts:t.points, gd:t.goalDifference, played:t.playedGames };
+    });
+  });
+  let matched = 0;
+  for(const data of Object.values(groups)){
+    let anyPlayed = false;
+    data.rows.forEach(r=>{
+      const d = live[r[0]];
+      if(d){
+        matched++;
+        r[1] = d.pts;
+        r[2] = d.gd>0 ? '+'+d.gd : ''+d.gd;
+        if(d.played>0) anyPlayed = true;
+      }
+    });
+    // пересортировка по очкам, затем по разнице (статус-метки остаются на командах)
+    data.rows.sort((a,b)=>{
+      const pa=+a[1]||0, pb=+b[1]||0;
+      if(pb!==pa) return pb-pa;
+      return (parseInt(b[2])||0)-(parseInt(a[2])||0);
+    });
+    if(anyPlayed) data.played = "в реальном времени";
+  }
+  return matched;
+}
+
+async function refresh(){
+  refreshBtn.disabled = true;
+  setBar(null, 'Обновление…');
+  try{
+    const json = await fetchLive();
+    const matched = applyLive(json);
+    renderGroups();
+    const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    if(matched>0) setBar('live', `<b>В реальном времени</b> · обновлено ${time}`);
+    else setBar('err', `API ответил, но матчей ЧМ нет — показан <b>снимок</b>`);
+  }catch(e){
+    renderGroups();
+    if(e.code==='no-key')
+      setBar('err', `<b>Снимок данных</b> · вставьте ключ football-data.org в&nbsp;коде для live-режима`);
+    else
+      setBar('err', `<b>Снимок данных</b> · live недоступен (${e.message})`);
+  }finally{
+    refreshBtn.disabled = false;
+  }
+}
+refreshBtn.addEventListener('click', refresh);
+
+// ---- BRACKET DATA (прогноз) ----
+const R32 = [
+ [["Argentina",1],["Czechia",0]],[["Switzerland",0],["Senegal",1]],
+ [["Spain",1],["Norway",0]],[["Uruguay",1],["IvoryCoast",0]],
+ [["England",1],["Ecuador",0]],[["Mexico",1],["Iran",0]],
+ [["Brazil",1],["Ghana",0]],[["Portugal",1],["Colombia",0]],
+ [["France",1],["Algeria",0]],[["Germany",1],["Morocco",0]],
+ [["Netherlands",1],["Egypt",0]],[["Belgium",1],["Croatia",0]],
+ [["USA",1],["Uzbekistan",0]],[["Japan",1],["Austria",0]],
+ [["Scotland",0],["Canada",1]],[["Korea",0],["Turkiye",1]]
+];
+const R16 = [
+ [["Argentina",1],["Senegal",0]],[["Spain",1],["Uruguay",0]],
+ [["England",1],["Mexico",0]],[["Brazil",1],["Portugal",0]],
+ [["France",1],["Germany",0]],[["Netherlands",1],["Belgium",0]],
+ [["USA",1],["Japan",0]],[["Canada",0],["Turkiye",1]]
+];
+const QF = [
+ [["Argentina",0],["Spain",1]],[["England",0],["Brazil",1]],
+ [["France",1],["Netherlands",0]],[["USA",1],["Turkiye",0]]
+];
+const SF = [
+ [["Spain",1],["Brazil",0]],[["France",1],["USA",0]]
+];
+const FIN = [[["Spain",1],["France",0]]];
+
+function tie(pair,isFinal){
+  const cls = isFinal? 'tie final-tie':'tie';
+  const s = pair.map(p=>{
+    const w = p[1]===1;
+    return `<div class="slot ${w?'win':(p[1]===0?'lose':'')}"><span class="fl">${fl[p[0]]}</span><span class="nm">${nm[p[0]]}</span></div>`;
+  }).join('');
+  return `<div class="${cls}">${s}</div>`;
+}
+function round(title,matches,isFinal){
+  return `<div class="round"><div class="round-title">${title}</div>${matches.map(m=>tie(m,isFinal)).join('')}</div>`;
+}
+document.getElementById('bracketEl').innerHTML =
+  round('1/16',R32) + round('1/8',R16) + round('1/4',QF) + round('1/2',SF) +
+  `<div class="round"><div class="round-title">Финал</div>${tie(FIN[0],true)}
+     <div class="champ"><div class="cap">Чемпион (прогноз)</div>
+     <div class="who"><span class="fl">🇪🇸</span> Испания</div></div></div>`;
+
+// ---- TABS ----
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.p).classList.add('active');
+  });
+});
+
+// ---- INIT ----
+renderGroups();
+refresh();
+if(LIVE.enabled && LIVE.apiKey && LIVE.refreshMs>0){
+  setInterval(()=>{ if(!document.hidden) refresh(); }, LIVE.refreshMs);
+}
+</script>
+</body>
+</html>
