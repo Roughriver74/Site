@@ -150,6 +150,30 @@
   tr.out td.name::before{content:"";width:4px;height:18px;border-radius:2px;background:var(--line);
     display:inline-block;margin-right:-3px}
 
+  /* Filter chips */
+  .chips{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .chip{font-family:'Oswald';text-transform:uppercase;letter-spacing:.05em;font-size:12px;font-weight:600;
+    color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;
+    padding:9px 15px;cursor:pointer;min-height:40px;transition:.15s}
+  .chip:hover{color:var(--txt)}
+  .chip.active{color:var(--bg);background:var(--cyan);border-color:transparent}
+  .chip.ghost{margin-left:auto;color:var(--cyan)}
+
+  /* Qualifiers (data-driven) */
+  .qualbox{margin-bottom:20px}
+  .qualbox .qhead{font-family:'Oswald';text-transform:uppercase;letter-spacing:.06em;font-size:14px;
+    font-weight:600;margin-bottom:4px}
+  .qualbox .qsub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .qualgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px}
+  .qcol h4{font-family:'Oswald';text-transform:uppercase;letter-spacing:.08em;font-size:11px;
+    color:var(--cyan);font-weight:600;margin-bottom:8px}
+  .qteam{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 9px;background:var(--surface);
+    border:1px solid var(--line);border-radius:9px;margin-bottom:6px}
+  .qteam .fl{font-size:16px;flex:0 0 auto}
+  .qteam .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qteam small{margin-left:auto;color:var(--muted);font-family:'JetBrains Mono';font-size:11px;flex:0 0 auto}
+  .qteam.dim{opacity:.5}
+
   /* Matches */
   .daylabel{font-family:'Oswald';text-transform:uppercase;letter-spacing:.1em;font-size:12px;
     color:var(--cyan);font-weight:600;margin:18px 2px 8px}
@@ -157,22 +181,26 @@
   .matchlist{display:flex;flex-direction:column;gap:10px}
   .match{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,var(--surface),var(--bg2));
     border:1px solid var(--line);border-radius:14px;padding:12px 12px}
-  .match .state{flex:0 0 58px;font-size:10px;color:var(--muted);text-transform:uppercase;
-    letter-spacing:.06em;text-align:center;line-height:1.3}
-  .match .side{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+  .match .state{flex:0 0 52px;font-size:10px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.04em;text-align:center;line-height:1.25}
+  .match .side{flex:1 1 0;display:flex;align-items:center;gap:8px;min-width:0}
   .match .side.away{flex-direction:row-reverse;text-align:right}
   .match .side .fl{font-size:20px;flex:0 0 auto}
   .match .side .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .match .score{flex:0 0 58px;font-family:'JetBrains Mono';font-weight:700;font-size:17px;text-align:center}
-  .match .score.time{font-size:14px;color:var(--muted);font-weight:500}
+  .match .score{flex:0 0 auto;min-width:50px;padding:0 4px;white-space:nowrap;
+    font-family:'JetBrains Mono';font-weight:700;font-size:17px;text-align:center;letter-spacing:.02em}
+  .match .score.time{font-size:13px;color:var(--muted);font-weight:500}
   .match.live{border-color:rgba(34,196,119,.45);box-shadow:0 0 0 1px rgba(34,196,119,.15)}
   .match.live .state{color:var(--green)}
   .match .lose{color:var(--muted)}
   .emptybox{color:var(--muted);font-size:14px;text-align:center;padding:30px 10px}
   @media(max-width:560px){
+    .match{gap:8px;padding:11px 11px}
+    .match .side{gap:7px}
+    .match .side .fl{font-size:18px}
     .match .side .nm{font-size:13px}
-    .match .state{flex-basis:50px}
-    .match .score,.match .state{flex-basis:50px}
+    .match .state{flex-basis:46px;font-size:9px}
+    .match .score{font-size:16px;min-width:46px;padding:0 2px}
   }
 
   /* Bracket */
@@ -189,6 +217,7 @@
   .slot+.slot{border-top:1px solid var(--line)}
   .slot .fl{font-size:15px}
   .slot .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot .sc{font-family:'JetBrains Mono';font-weight:700;font-size:13px;flex:0 0 auto;color:var(--txt)}
   .slot.win{background:linear-gradient(90deg,rgba(34,196,119,.16),transparent);font-weight:600}
   .slot.win .nm{color:#bff3d6}
   .slot.lose{color:var(--muted);opacity:.6}
@@ -268,17 +297,24 @@
       <span class="txt" id="liveText2">Загрузка матчей…</span>
       <button class="refresh" id="refreshBtn2">Обновить</button>
     </div>
+    <div class="chips" id="matchFilter">
+      <button class="chip active" data-f="all">Все</button>
+      <button class="chip" data-f="live">Идут</button>
+      <button class="chip" data-f="today">Сегодня</button>
+      <button class="chip ghost" id="toNearest">↓ к ближайшим</button>
+    </div>
     <div class="matchlist" id="matchList"></div>
   </section>
 
   <!-- ===== BRACKET ===== -->
   <section class="panel" id="bracket">
-    <div class="legend"><span class="lg-q"><i></i>проходит дальше (прогноз)</span></div>
+    <div id="qualifiers"></div>
+    <div class="legend"><span class="lg-q"><i></i>проходит дальше</span></div>
     <div class="scrollhint">← листайте сетку вбок →</div>
     <div class="bracket-scroll">
       <div class="bracket" id="bracketEl"></div>
     </div>
-    <div class="note" style="margin-top:16px">Сетку 1/16 ФИФА формирует по позициям групп и тому, из каких групп вышли восемь третьих команд. Здесь показан <b>правдоподобный сценарий</b> пар и проходов — реальные пары определятся после группового этапа.</div>
+    <div class="note" id="bracketNote" style="margin-top:16px"></div>
   </section>
 
   <!-- ===== FORECAST ===== -->
@@ -518,6 +554,7 @@ async function refresh(){
     const json = await fetchLive();
     const matched = applyLive(json);
     renderGroups();
+    renderBracket(); // список вышедших пересчитываем по свежим таблицам
     const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     if(matched>0) setBar('live', `<b>В реальном времени</b> · ESPN · обновлено ${time}`);
     else setBar('err', `ESPN ещё не отдаёт таблицы турнира — показан <b>снимок</b>`);
@@ -530,18 +567,25 @@ async function refresh(){
 }
 refreshBtn.addEventListener('click', refresh);
 
-// ---- LIVE MATCHES (ESPN scoreboard, тоже без ключа) ----
+// ============================================================
+//  ВСЕ МАТЧИ ТУРНИРА (ESPN scoreboard) → расписание + сетка
+// ============================================================
 const livebar2  = document.getElementById('livebar2');
 const liveText2 = document.getElementById('liveText2');
 const refreshBtn2 = document.getElementById('refreshBtn2');
 const matchList = document.getElementById('matchList');
 const pad = n => String(n).padStart(2,'0');
+let allEvents = [];
+let scheduleFilter = 'all';
 
 function setBar2(state, html){
   livebar2.classList.remove('live','err');
   if(state) livebar2.classList.add(state);
   liveText2.innerHTML = html;
 }
+const evState = e => (e.status && e.status.type && e.status.type.state) || 'pre';
+const isToday = iso => { const d=new Date(iso), n=new Date();
+  return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate(); };
 function teamCell(team, away, lose){
   team = team || {};
   const key  = matchKey(team);
@@ -549,10 +593,16 @@ function teamCell(team, away, lose){
   const name = key ? nm[key] : (team.shortDisplayName||team.displayName||team.abbreviation||'—');
   return `<div class="side ${away?'away':'home'} ${lose?'lose':''}"><span class="fl">${flag}</span><span class="nm">${name}</span></div>`;
 }
-function renderMatches(events){
-  if(!events.length){ matchList.innerHTML = `<div class="emptybox">На ближайшие дни матчей не найдено.</div>`; return; }
-  const evs = events.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
-  let html = '', curDay = '';
+
+// ---- РАСПИСАНИЕ (вкладка «Матчи») ----
+function renderSchedule(){
+  let evs = allEvents.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+  if(scheduleFilter==='live')  evs = evs.filter(e=> evState(e)==='in');
+  if(scheduleFilter==='today') evs = evs.filter(e=> isToday(e.date));
+  if(!evs.length){ matchList.innerHTML = `<div class="emptybox">Матчей нет.</div>`; return; }
+
+  const now = Date.now();
+  let html = '', curDay = '', nearestSet = false;
   evs.forEach(ev=>{
     const dt = new Date(ev.date);
     const dayKey = dt.toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'});
@@ -561,15 +611,18 @@ function renderMatches(events){
     const cs   = comp.competitors || [];
     const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
     const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
-    const st   = (ev.status && ev.status.type) || {};
-    const state = st.state || 'pre';
-    const hhmm = dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-    let stateTxt = '', scoreHtml = `<div class="score time">${hhmm}</div>`;
+    const state = evState(ev);
+    const st    = (ev.status && ev.status.type) || {};
+    const hhmm  = dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    let stateTxt='', scoreHtml=`<div class="score time">${hhmm}</div>`;
     if(state==='in'){ stateTxt = st.shortDetail || 'LIVE'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
     else if(state==='post'){ stateTxt = 'Заверш.'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
     let hLose=false, aLose=false;
     if(state==='post'){ const h=+home.score, a=+away.score; if(h<a) hLose=true; else if(a<h) aLose=true; }
-    html += `<div class="match ${state==='in'?'live':''}">
+    // якорь «ближайший»: первый идущий или первый будущий матч
+    let anchor = '';
+    if(!nearestSet && (state==='in' || (state==='pre' && dt.getTime()>=now))){ anchor = ' id="nearestMatch"'; nearestSet = true; }
+    html += `<div class="match ${state==='in'?'live':''}"${anchor}>
       <div class="state">${stateTxt}</div>
       ${teamCell(home.team, false, hLose)}
       ${scoreHtml}
@@ -578,35 +631,151 @@ function renderMatches(events){
   });
   matchList.innerHTML = html;
 }
-async function refreshMatches(){
+function scrollToNearest(){
+  const el = document.getElementById('nearestMatch');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ---- СЕТКА ПЛЕЙ-ОФФ ИЗ ДАННЫХ ----
+// определяем раунд матча по заголовку ESPN (notes[].headline)
+function roundOf(ev){
+  const comp = (ev.competitions && ev.competitions[0]) || {};
+  const note = ((comp.notes && comp.notes[0] && comp.notes[0].headline) || ev.name || '').toLowerCase();
+  if(/round of 32|1\/16/.test(note)) return 'R32';
+  if(/round of 16|1\/8/.test(note))  return 'R16';
+  if(/quarter|1\/4/.test(note))      return 'QF';
+  if(/semi|1\/2/.test(note))         return 'SF';
+  if(/third place|3rd place|play-?off for third|за 3/.test(note)) return '3RD';
+  if(/final/.test(note))             return 'FIN';
+  return null; // групповой этап
+}
+function realSlot(c, completed){
+  c = c || {}; const team = c.team || {};
+  const key  = matchKey(team);
+  const flag = key ? fl[key] : '🏳️';
+  const name = key ? nm[key] : (team.shortDisplayName||team.displayName||team.abbreviation||'—');
+  const win  = completed && c.winner===true;
+  const lose = completed && c.winner===false;
+  const sc   = (completed && c.score!=null) ? `<span class="sc">${c.score}</span>` : '';
+  return `<div class="slot ${win?'win':(lose?'lose':'')}"><span class="fl">${flag}</span><span class="nm">${name}</span>${sc}</div>`;
+}
+function realTie(ev, isFinal){
+  const comp = (ev.competitions && ev.competitions[0]) || {};
+  const cs   = comp.competitors || [];
+  const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
+  const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
+  const completed = !!(ev.status && ev.status.type && ev.status.type.completed);
+  return `<div class="tie ${isFinal?'final-tie':''}">${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
+}
+function renderRealBracket(ko){
+  const cols = [['R32','1/16'],['R16','1/8'],['QF','1/4'],['SF','1/2'],['FIN','Финал']];
+  let html = '';
+  cols.forEach(([k,label])=>{
+    const evs = (ko[k]||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+    if(!evs.length) return;
+    let inner = evs.map(ev=> realTie(ev, k==='FIN')).join('');
+    if(k==='FIN' && (ko['3RD']||[]).length){
+      inner += `<div class="round-title" style="margin-top:14px">Матч за 3-е место</div>` +
+               ko['3RD'].map(ev=> realTie(ev,false)).join('');
+    }
+    html += `<div class="round"><div class="round-title">${label}</div>${inner}</div>`;
+  });
+  return html;
+}
+
+// ---- КТО ВЫШЕЛ (считаем из живых таблиц) ----
+function computeQualifiers(){
+  const winners=[], runners=[], thirds=[];
+  for(const [g,data] of Object.entries(groups)){
+    const r = data.rows;
+    const cell = (row)=>({ key:row[0], g, pts:(+row[1]||0), gd:(parseInt(row[2])||0), started:(row[1]!=='–') });
+    if(r[0]) winners.push(cell(r[0]));
+    if(r[1]) runners.push(cell(r[1]));
+    if(r[2]) thirds.push(cell(r[2]));
+  }
+  thirds.sort((a,b)=> b.pts-a.pts || b.gd-a.gd);
+  return { winners, runners, thirds, best8:thirds.slice(0,8) };
+}
+function qTeam(t, dim){
+  return `<div class="qteam ${dim?'dim':''}"><span class="fl">${fl[t.key]}</span>` +
+         `<span class="nm">${nm[t.key]}</span><small>${t.g}</small></div>`;
+}
+function renderQualifiers(){
+  const box = document.getElementById('qualifiers');
+  const q = computeQualifiers();
+  const started = q.winners.some(t=>t.started);
+  const best8keys = new Set(q.best8.map(t=>t.key));
+  box.innerHTML = `
+    <div class="qualbox">
+      <div class="qhead">Кто выходит в плей-офф</div>
+      <div class="qsub">${started
+        ? 'Считается из текущих таблиц групп (по очкам и разнице). Пока туры не доиграны — это предварительно.'
+        : 'Группы ещё не игрались — показан расклад по посеву.'}</div>
+      <div class="qualgrid">
+        <div class="qcol"><h4>Победители групп</h4>${q.winners.map(t=>qTeam(t)).join('')}</div>
+        <div class="qcol"><h4>Вторые места</h4>${q.runners.map(t=>qTeam(t)).join('')}</div>
+        <div class="qcol"><h4>Лучшие третьи · 8 из 12</h4>${q.thirds.map(t=>qTeam(t, !best8keys.has(t.key))).join('')}</div>
+      </div>
+    </div>`;
+}
+
+// ---- ДИСПЕТЧЕР СЕТКИ: реальная (если есть) или проекция ----
+function renderBracket(){
+  const ko = {R32:[],R16:[],QF:[],SF:[],'3RD':[],FIN:[]};
+  let haveKO = false;
+  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r){ ko[r].push(ev); haveKO = true; } });
+  const noteEl = document.getElementById('bracketNote');
+  const qBox   = document.getElementById('qualifiers');
+  if(haveKO){
+    document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
+    qBox.innerHTML = '';
+    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN — счёт и проходы обновляются вживую.';
+  }else{
+    renderProjection();
+    renderQualifiers();
+    noteEl.innerHTML = 'Плей-офф ещё не начался. Список вышедших слева считается из живых таблиц; сетка ниже — <b>правдоподобный прогноз</b> пар и проходов. Как только ФИФА проведёт жеребьёвку, здесь появится реальная сетка с живым счётом.';
+  }
+}
+
+// ---- ЗАГРУЗКА ВСЕХ МАТЧЕЙ ----
+async function refreshEvents(){
   refreshBtn2.disabled = true;
   setBar2(null, 'Обновление…');
   try{
-    const now = new Date();
-    const d0 = new Date(now); d0.setDate(d0.getDate()-1);
-    const d1 = new Date(now); d1.setDate(d1.getDate()+1);
-    const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
-    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${LIVE.league}/scoreboard?dates=${fmt(d0)}-${fmt(d1)}&limit=100`;
+    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${LIVE.league}/scoreboard?dates=20260611-20260719&limit=500`;
     const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
-    const events = json.events || [];
-    renderMatches(events);
-    const time  = now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-    const liveN = events.filter(e => e.status && e.status.type && e.status.type.state==='in').length;
-    if(!events.length) setBar2('err', 'Матчей на эти даты не найдено');
-    else if(liveN)     setBar2('live', `<b>${liveN} в прямом эфире</b> · обновлено ${time}`);
-    else               setBar2('live', `<b>Матчи ESPN</b> · обновлено ${time}`);
+    allEvents = json.events || [];
+    renderSchedule();
+    renderBracket();
+    const time  = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    const liveN = allEvents.filter(e=> evState(e)==='in').length;
+    if(!allEvents.length) setBar2('err', 'Расписание недоступно — показан прогноз сетки');
+    else if(liveN)        setBar2('live', `<b>${liveN} в прямом эфире</b> · ${allEvents.length} матчей · ${time}`);
+    else                  setBar2('live', `<b>${allEvents.length} матчей</b> · ESPN · обновлено ${time}`);
   }catch(e){
-    matchList.innerHTML = `<div class="emptybox">Не удалось загрузить матчи (${e.message}).</div>`;
-    setBar2('err', '<b>Матчи недоступны</b>');
+    matchList.innerHTML = `<div class="emptybox">Не удалось загрузить расписание (${e.message}).</div>`;
+    setBar2('err', '<b>Расписание недоступно</b>');
+    renderBracket(); // покажем проекцию + список из таблиц
   }finally{
     refreshBtn2.disabled = false;
   }
 }
-refreshBtn2.addEventListener('click', refreshMatches);
+refreshBtn2.addEventListener('click', refreshEvents);
 
-// ---- BRACKET DATA (прогноз) ----
+// фильтр-чипы расписания
+document.querySelectorAll('#matchFilter .chip[data-f]').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#matchFilter .chip[data-f]').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    scheduleFilter = c.dataset.f;
+    renderSchedule();
+  });
+});
+document.getElementById('toNearest').addEventListener('click', scrollToNearest);
+
+// ---- BRACKET DATA (прогноз, fallback до жеребьёвки) ----
 const R32 = [
  [["Argentina",1],["Czechia",0]],[["Switzerland",0],["Senegal",1]],
  [["Spain",1],["Norway",0]],[["Uruguay",1],["IvoryCoast",0]],
@@ -643,11 +812,13 @@ function tie(pair,isFinal){
 function round(title,matches,isFinal){
   return `<div class="round"><div class="round-title">${title}</div>${matches.map(m=>tie(m,isFinal)).join('')}</div>`;
 }
-document.getElementById('bracketEl').innerHTML =
-  round('1/16',R32) + round('1/8',R16) + round('1/4',QF) + round('1/2',SF) +
-  `<div class="round"><div class="round-title">Финал</div>${tie(FIN[0],true)}
-     <div class="champ"><div class="cap">Чемпион (прогноз)</div>
-     <div class="who"><span class="fl">🇪🇸</span> Испания</div></div></div>`;
+function renderProjection(){
+  document.getElementById('bracketEl').innerHTML =
+    round('1/16',R32) + round('1/8',R16) + round('1/4',QF) + round('1/2',SF) +
+    `<div class="round"><div class="round-title">Финал</div>${tie(FIN[0],true)}
+       <div class="champ"><div class="cap">Чемпион (прогноз)</div>
+       <div class="who"><span class="fl">🇪🇸</span> Испания</div></div></div>`;
+}
 
 // ---- TABS ----
 document.querySelectorAll('.tab').forEach(t=>{
@@ -662,9 +833,9 @@ document.querySelectorAll('.tab').forEach(t=>{
 // ---- INIT ----
 renderGroups();
 refresh();
-refreshMatches();
+refreshEvents();
 if(LIVE.enabled && LIVE.refreshMs>0){
-  setInterval(()=>{ if(!document.hidden){ refresh(); refreshMatches(); } }, LIVE.refreshMs);
+  setInterval(()=>{ if(!document.hidden){ refresh(); refreshEvents(); } }, LIVE.refreshMs);
 }
 </script>
 </body>
