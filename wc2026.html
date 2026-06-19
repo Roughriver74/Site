@@ -212,6 +212,9 @@
     scroll-snap-align:start}
   .round-title{font-family:'Oswald';text-transform:uppercase;letter-spacing:.1em;font-size:12px;
     color:var(--cyan);text-align:center;margin-bottom:6px;font-weight:600}
+  .round-date{font-size:10px;color:var(--muted);text-align:center;margin:-2px 0 9px;letter-spacing:.03em}
+  .tie-date{font-size:9px;color:var(--muted);text-align:center;padding:4px 0 2px;letter-spacing:.03em;
+    border-bottom:1px solid var(--line)}
   .tie{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .slot{display:flex;align-items:center;gap:8px;padding:9px 10px;font-size:13px}
   .slot+.slot{border-top:1px solid var(--line)}
@@ -667,7 +670,8 @@ function realTie(ev, isFinal){
   const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
   const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
   const completed = !!(ev.status && ev.status.type && ev.status.type.completed);
-  return `<div class="tie ${isFinal?'final-tie':''}">${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
+  const d = new Date(ev.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+  return `<div class="tie ${isFinal?'final-tie':''}"><div class="tie-date">${d}</div>${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
 }
 function renderRealBracket(ko){
   const cols = [['R32','1/16'],['R16','1/8'],['QF','1/4'],['SF','1/2'],['FIN','Финал']];
@@ -741,7 +745,7 @@ function renderBracket(){
   }else{
     renderProjection();
     renderQualifiers();
-    noteEl.innerHTML = 'Плей-офф ещё не начался. Список вышедших слева считается из живых таблиц; сетка ниже — <b>правдоподобный прогноз</b> пар и проходов. Как только ФИФА проведёт жеребьёвку, здесь появится реальная сетка с живым счётом.';
+    noteEl.innerHTML = 'Плей-офф ещё не начался. Даты раундов — официальный календарь ЧМ-2026 (1/16 с 28 июня, финал 19 июля). Список вышедших слева считается из живых таблиц; пары и проходы ниже — <b>прогноз</b>. После жеребьёвки сетка сменится на реальную с живым счётом.';
   }
 }
 
@@ -817,13 +821,30 @@ function tie(pair,isFinal){
   }).join('');
   return `<div class="${cls}">${s}</div>`;
 }
-function round(title,matches,isFinal){
-  return `<div class="round"><div class="round-title">${title}</div>${matches.map(m=>tie(m,isFinal)).join('')}</div>`;
+// официальный календарь плей-офф ЧМ-2026 (fallback, если ESPN не отдаёт даты)
+const KO_DATES = { R32:'28 июн – 3 июл', R16:'4 – 7 июл', QF:'9 – 11 июл', SF:'14 – 15 июл', '3RD':'18 июля', FIN:'19 июля' };
+function fmtDay(d){ return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}); }
+// окна дат раундов — из реального расписания ESPN, иначе из календаря
+function koWindows(){
+  const buckets = {};
+  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r){ (buckets[r]=buckets[r]||[]).push(new Date(ev.date)); } });
+  const out = { ...KO_DATES };
+  Object.keys(buckets).forEach(k=>{
+    const ds = buckets[k].sort((a,b)=>a-b);
+    const a = fmtDay(ds[0]), b = fmtDay(ds[ds.length-1]);
+    out[k] = (a===b) ? a : `${a} – ${b}`;
+  });
+  return out;
+}
+function round(title,matches,isFinal,sub){
+  const s = sub ? `<div class="round-date">${sub}</div>` : '';
+  return `<div class="round"><div class="round-title">${title}</div>${s}${matches.map(m=>tie(m,isFinal)).join('')}</div>`;
 }
 function renderProjection(){
+  const D = koWindows();
   document.getElementById('bracketEl').innerHTML =
-    round('1/16',R32) + round('1/8',R16) + round('1/4',QF) + round('1/2',SF) +
-    `<div class="round"><div class="round-title">Финал</div>${tie(FIN[0],true)}
+    round('1/16',R32,false,D.R32) + round('1/8',R16,false,D.R16) + round('1/4',QF,false,D.QF) + round('1/2',SF,false,D.SF) +
+    `<div class="round"><div class="round-title">Финал</div><div class="round-date">${D.FIN}</div>${tie(FIN[0],true)}
        <div class="champ"><div class="cap">Чемпион (прогноз)</div>
        <div class="who"><span class="fl">🇪🇸</span> Испания</div></div></div>`;
 }
