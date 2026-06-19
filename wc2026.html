@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0e1c">
-<meta name="description" content="ЧМ-2026: группы, плей-офф и прогноз. Живые результаты с football-data.org и удобный вид на телефоне.">
+<meta name="description" content="ЧМ-2026: группы, плей-офф и прогноз. Живые результаты ESPN и удобный вид на телефоне.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta property="og:title" content="ЧМ-2026 · Группы и плей-офф">
@@ -211,7 +211,7 @@
     <div class="hosts">
       <span>🇺🇸 США</span><span>🇨🇦 Канада</span><span>🇲🇽 Мексика</span>
     </div>
-    <div class="note"><b>Как читать:</b> таблицы групп подгружаются в реальном времени, если подключён ключ API (см. ниже). Плей-офф и блок «кто победит» — это <b>прогноз</b> на основе посева ФИФА и формы, а не факт.</div>
+    <div class="note"><b>Как читать:</b> таблицы групп подгружаются в реальном времени с ESPN — без ключа и регистрации. Плей-офф и блок «кто победит» — это <b>прогноз</b> на основе посева ФИФА и формы, а не факт.</div>
   </header>
 
   <div class="tabs">
@@ -262,31 +262,29 @@
   </section>
 
   <footer>
-    Прогнозы построены на посеве, рейтинге ФИФА и результатах стартовых туров. Живые результаты — football-data.org. Источники: FIFA, ESPN, NBC Sports, UEFA.
+    Прогнозы построены на посеве, рейтинге ФИФА и результатах стартовых туров. Живые таблицы групп — открытый API ESPN. Источники: FIFA, ESPN, NBC Sports, UEFA.
   </footer>
 </div>
 
 <script>
 /* ============================================================
-   ЖИВЫЕ ДАННЫЕ
-   GitHub Pages — статика, поэтому результаты тянутся прямо из
-   браузера с бесплатного API football-data.org.
+   ЖИВЫЕ ДАННЫЕ — РАБОТАЕТ ИЗ КОРОБКИ, БЕЗ КЛЮЧА
+   GitHub Pages / Vercel — это статика, поэтому таблицы групп
+   тянутся прямо из браузера с открытого API ESPN
+   (site.api.espn.com). Ключ и регистрация не нужны, CORS открыт.
 
-   Чтобы включить live-режим:
-   1. Зарегистрируйтесь на https://www.football-data.org/client/register
-   2. Скопируйте полученный токен и вставьте в apiKey ниже.
-   3. Запушьте — страница начнёт обновлять группы автоматически.
+   Если ESPN недоступен или ещё не отдаёт данные турнира, страница
+   показывает встроенный снимок и честно пишет об этом в строке
+   статуса. Прогноз сетки, финала и блока «кто победит» — всегда
+   локальный (ни один API такого не отдаёт).
 
-   Без ключа (или если API недоступен / не покрывает турнир)
-   страница показывает встроенный снимок данных и честно об этом
-   пишет в строке статуса. Прогноз сетки и финала всегда локальный.
+   ESPN — неофициальный API: эндпойнт может меняться без анонса,
+   поэтому он завёрнут в аккуратную обработку ошибок.
    ============================================================ */
 const LIVE = {
-  enabled:   true,
-  apiKey:    "",          // ← вставьте токен football-data.org
-  competition:"WC",       // World Cup
-  corsProxy: "",          // напр. "https://corsproxy.io/?url=" если браузер блокирует прямой запрос
-  refreshMs: 60000        // автообновление раз в минуту
+  enabled:  true,
+  league:   "fifa.world",   // код Чемпионата мира в ESPN
+  refreshMs: 60000          // автообновление раз в минуту (0 — выключить)
 };
 
 // ---- DICTIONARIES ----
@@ -323,7 +321,7 @@ const apiMap = {
  IvoryCoast:{tla:"CIV",n:["ivorycoast","cotedivoire"]}, Ecuador:{tla:"ECU",n:["ecuador"]},
  Netherlands:{tla:"NED",n:["netherlands"]}, Japan:{tla:"JPN",n:["japan"]}, Sweden:{tla:"SWE",n:["sweden"]},
  Tunisia:{tla:"TUN",n:["tunisia"]}, Belgium:{tla:"BEL",n:["belgium"]}, Egypt:{tla:"EGY",n:["egypt"]},
- Iran:{tla:"IRN",n:["iran","iranislamicrepublic"]}, NewZealand:{tla:"NZL",n:["newzealand"]},
+ Iran:{tla:"IRN",n:["iran","iriran","iranislamicrepublic"]}, NewZealand:{tla:"NZL",n:["newzealand"]},
  Spain:{tla:"ESP",n:["spain"]}, CapeVerde:{tla:"CPV",n:["capeverde","caboverde"]},
  Saudi:{tla:"KSA",n:["saudiarabia"]}, Uruguay:{tla:"URU",n:["uruguay"]}, France:{tla:"FRA",n:["france"]},
  Senegal:{tla:"SEN",n:["senegal"]}, Iraq:{tla:"IRQ",n:["iraq"]}, Norway:{tla:"NOR",n:["norway"]},
@@ -343,8 +341,10 @@ for(const [k,v] of Object.entries(apiMap)){
 }
 function matchKey(team){
   if(!team) return null;
-  if(team.tla && tlaToKey[team.tla]) return tlaToKey[team.tla];
-  return nameToKey[norm(team.shortName)] || nameToKey[norm(team.name)] || null;
+  const code = team.abbreviation || team.tla;          // ESPN: abbreviation, FD: tla
+  if(code && tlaToKey[code]) return tlaToKey[code];
+  return nameToKey[norm(team.displayName)] || nameToKey[norm(team.shortDisplayName)]
+      || nameToKey[norm(team.shortName)]   || nameToKey[norm(team.name)] || null;
 }
 
 // ---- GROUP SNAPSHOT (fallback) ----
@@ -412,23 +412,44 @@ function setBar(state, html){
 }
 
 async function fetchLive(){
-  if(!LIVE.enabled) return null;
-  if(!LIVE.apiKey){ const e=new Error('no-key'); e.code='no-key'; throw e; }
-  const base = `https://api.football-data.org/v4/competitions/${LIVE.competition}/standings`;
-  const url  = LIVE.corsProxy ? LIVE.corsProxy + encodeURIComponent(base) : base;
-  const res  = await fetch(url, { headers:{ 'X-Auth-Token': LIVE.apiKey } });
+  if(!LIVE.enabled){ const e=new Error('off'); e.code='off'; throw e; }
+  const url = `https://site.api.espn.com/apis/v2/sports/soccer/${LIVE.league}/standings`;
+  const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
   if(!res.ok) throw new Error('HTTP '+res.status);
   return res.json();
 }
 
+// достаёт числовое значение нужной статистики из массива ESPN stats[]
+function stat(stats, ...keys){
+  if(!Array.isArray(stats)) return null;
+  for(const k of keys){
+    const s = stats.find(x => (x.type||'').toLowerCase()===k || (x.name||'').toLowerCase()===k.toLowerCase());
+    if(s && s.value!=null) return s.value;
+  }
+  return null;
+}
+
 function applyLive(json){
+  // ESPN: { children:[ {name:"Group A", standings:{ entries:[ {team, stats[]} ] }} ] }
   // строим карту key -> {pts, gd, played}
   const live = {};
-  (json.standings||[]).filter(s=>s.type==='TOTAL').forEach(s=>{
-    (s.table||[]).forEach(t=>{
-      const key = matchKey(t.team);
+  const groupsNode = (json.children && json.children.length)
+        ? json.children
+        : [json]; // запасной случай: плоские standings без групп
+  groupsNode.forEach(node=>{
+    const entries = (node.standings && node.standings.entries) || node.entries || [];
+    entries.forEach(en=>{
+      const key = matchKey(en.team);
       if(!key) return;
-      live[key] = { pts:t.points, gd:t.goalDifference, played:t.playedGames };
+      const pts    = stat(en.stats,'points');
+      const played = stat(en.stats,'gamesplayed','gamesPlayed');
+      let gd       = stat(en.stats,'pointdifferential','pointDifferential');
+      if(gd==null){
+        const gf = stat(en.stats,'pointsfor','pointsFor');
+        const ga = stat(en.stats,'pointsagainst','pointsAgainst');
+        if(gf!=null && ga!=null) gd = gf-ga;
+      }
+      live[key] = { pts, gd, played };
     });
   });
   let matched = 0;
@@ -436,10 +457,10 @@ function applyLive(json){
     let anyPlayed = false;
     data.rows.forEach(r=>{
       const d = live[r[0]];
-      if(d){
+      if(d && d.pts!=null){
         matched++;
         r[1] = d.pts;
-        r[2] = d.gd>0 ? '+'+d.gd : ''+d.gd;
+        if(d.gd!=null) r[2] = d.gd>0 ? '+'+d.gd : ''+d.gd;
         if(d.played>0) anyPlayed = true;
       }
     });
@@ -462,14 +483,11 @@ async function refresh(){
     const matched = applyLive(json);
     renderGroups();
     const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-    if(matched>0) setBar('live', `<b>В реальном времени</b> · обновлено ${time}`);
-    else setBar('err', `API ответил, но матчей ЧМ нет — показан <b>снимок</b>`);
+    if(matched>0) setBar('live', `<b>В реальном времени</b> · ESPN · обновлено ${time}`);
+    else setBar('err', `ESPN ещё не отдаёт таблицы турнира — показан <b>снимок</b>`);
   }catch(e){
     renderGroups();
-    if(e.code==='no-key')
-      setBar('err', `<b>Снимок данных</b> · вставьте ключ football-data.org в&nbsp;коде для live-режима`);
-    else
-      setBar('err', `<b>Снимок данных</b> · live недоступен (${e.message})`);
+    setBar('err', `<b>Снимок данных</b> · live недоступен (${e.message})`);
   }finally{
     refreshBtn.disabled = false;
   }
@@ -532,7 +550,7 @@ document.querySelectorAll('.tab').forEach(t=>{
 // ---- INIT ----
 renderGroups();
 refresh();
-if(LIVE.enabled && LIVE.apiKey && LIVE.refreshMs>0){
+if(LIVE.enabled && LIVE.refreshMs>0){
   setInterval(()=>{ if(!document.hidden) refresh(); }, LIVE.refreshMs);
 }
 </script>
