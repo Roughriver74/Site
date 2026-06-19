@@ -274,6 +274,7 @@
   <div class="tabs">
     <button class="tab active" data-p="groups">Группы</button>
     <button class="tab" data-p="matches">Матчи</button>
+    <button class="tab" data-p="qualify">Выходят</button>
     <button class="tab" data-p="bracket">Плей-офф</button>
     <button class="tab" data-p="forecast">Кто победит</button>
   </div>
@@ -309,9 +310,13 @@
     <div class="matchlist" id="matchList"></div>
   </section>
 
+  <!-- ===== QUALIFY (кто выходит) ===== -->
+  <section class="panel" id="qualify">
+    <div id="qualifiers"></div>
+  </section>
+
   <!-- ===== BRACKET ===== -->
   <section class="panel" id="bracket">
-    <div id="qualifiers"></div>
     <div class="legend"><span class="lg-q"><i></i>проходит дальше</span></div>
     <div class="scrollhint">← листайте сетку вбок →</div>
     <div class="bracket-scroll">
@@ -559,7 +564,7 @@ async function refresh(){
     const json = await fetchLive();
     const matched = applyLive(json);
     renderGroups();
-    renderBracket(); // список вышедших пересчитываем по свежим таблицам
+    renderQualifiers(); // список вышедших пересчитываем по свежим таблицам
     const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     if(matched>0) setBar('live', `<b>В реальном времени</b> · ESPN · обновлено ${time}`);
     else setBar('err', `ESPN ещё не отдаёт таблицы турнира — показан <b>снимок</b>`);
@@ -656,9 +661,14 @@ function roundOf(ev){
 }
 function realSlot(c, completed){
   c = c || {}; const team = c.team || {};
-  const key  = matchKey(team);
-  const flag = key ? fl[key] : '🏳️';
-  const name = key ? nm[key] : (team.shortDisplayName||team.displayName||team.abbreviation||'—');
+  const key = matchKey(team);
+  let flag, name;
+  if(key){ flag = fl[key]; name = nm[key]; }
+  else {
+    const raw = (team.displayName || team.shortDisplayName || '').trim();
+    flag = '';
+    name = (raw && !/^tbd$/i.test(raw)) ? raw : '—'; // ещё не определена
+  }
   const win  = completed && c.winner===true;
   const lose = completed && c.winner===false;
   const sc   = (completed && c.score!=null) ? `<span class="sc">${c.score}</span>` : '';
@@ -670,8 +680,9 @@ function realTie(ev, isFinal){
   const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
   const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
   const completed = !!(ev.status && ev.status.type && ev.status.type.completed);
-  const d = new Date(ev.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
-  return `<div class="tie ${isFinal?'final-tie':''}"><div class="tie-date">${d}</div>${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
+  const dt = new Date(ev.date);
+  const dstr = dt.toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  return `<div class="tie ${isFinal?'final-tie':''}"><div class="tie-date">${dstr}</div>${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
 }
 function renderRealBracket(ko){
   const cols = [['R32','1/16'],['R16','1/8'],['QF','1/4'],['SF','1/2'],['FIN','Финал']];
@@ -726,26 +737,18 @@ function renderQualifiers(){
 }
 
 // ---- ДИСПЕТЧЕР СЕТКИ: реальная (если есть) или проекция ----
-// сетка плей-офф «готова», только если обе команды реально определены (не заглушка TBD)
-function bracketReady(ev){
-  const comp = (ev.competitions && ev.competitions[0]) || {};
-  const cs   = comp.competitors || [];
-  return cs.length>=2 && cs.every(c => matchKey(c && c.team) !== null);
-}
 function renderBracket(){
+  // берём реальные матчи плей-офф из ESPN — с датой и временем, даже если команды ещё TBD
   const ko = {R32:[],R16:[],QF:[],SF:[],'3RD':[],FIN:[]};
   let haveKO = false;
-  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r && bracketReady(ev)){ ko[r].push(ev); haveKO = true; } });
+  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r){ ko[r].push(ev); haveKO = true; } });
   const noteEl = document.getElementById('bracketNote');
-  const qBox   = document.getElementById('qualifiers');
   if(haveKO){
     document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
-    qBox.innerHTML = '';
-    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN — счёт и проходы обновляются вживую.';
+    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. Команды подставляются по мере жеребьёвки и результатов. Прогноз чемпиона — во вкладке «Кто победит».';
   }else{
     renderProjection();
-    renderQualifiers();
-    noteEl.innerHTML = 'Плей-офф ещё не начался. Даты раундов — официальный календарь ЧМ-2026 (1/16 с 28 июня, финал 19 июля). Список вышедших слева считается из живых таблиц; пары и проходы ниже — <b>прогноз</b>. После жеребьёвки сетка сменится на реальную с живым счётом.';
+    noteEl.innerHTML = 'Матчи плей-офф ещё не в расписании ESPN. Даты раундов — официальный календарь ЧМ-2026 (1/16 с 28 июня, финал 19 июля). Пары и проходы ниже — <b>прогноз</b>; реальная сетка с датой и временем появится автоматически.';
   }
 }
 
@@ -861,6 +864,8 @@ document.querySelectorAll('.tab').forEach(t=>{
 
 // ---- INIT ----
 renderGroups();
+renderQualifiers();
+renderProjection();
 refresh();
 refreshEvents();
 if(LIVE.enabled && LIVE.refreshMs>0){
