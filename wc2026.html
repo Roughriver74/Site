@@ -150,6 +150,31 @@
   tr.out td.name::before{content:"";width:4px;height:18px;border-radius:2px;background:var(--line);
     display:inline-block;margin-right:-3px}
 
+  /* Matches */
+  .daylabel{font-family:'Oswald';text-transform:uppercase;letter-spacing:.1em;font-size:12px;
+    color:var(--cyan);font-weight:600;margin:18px 2px 8px}
+  .daylabel:first-child{margin-top:2px}
+  .matchlist{display:flex;flex-direction:column;gap:10px}
+  .match{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,var(--surface),var(--bg2));
+    border:1px solid var(--line);border-radius:14px;padding:12px 12px}
+  .match .state{flex:0 0 58px;font-size:10px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.06em;text-align:center;line-height:1.3}
+  .match .side{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+  .match .side.away{flex-direction:row-reverse;text-align:right}
+  .match .side .fl{font-size:20px;flex:0 0 auto}
+  .match .side .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .match .score{flex:0 0 58px;font-family:'JetBrains Mono';font-weight:700;font-size:17px;text-align:center}
+  .match .score.time{font-size:14px;color:var(--muted);font-weight:500}
+  .match.live{border-color:rgba(34,196,119,.45);box-shadow:0 0 0 1px rgba(34,196,119,.15)}
+  .match.live .state{color:var(--green)}
+  .match .lose{color:var(--muted)}
+  .emptybox{color:var(--muted);font-size:14px;text-align:center;padding:30px 10px}
+  @media(max-width:560px){
+    .match .side .nm{font-size:13px}
+    .match .state{flex-basis:50px}
+    .match .score,.match .state{flex-basis:50px}
+  }
+
   /* Bracket */
   .scrollhint{display:none;font-size:12px;color:var(--muted);margin-bottom:8px}
   .bracket-scroll{overflow-x:auto;padding-bottom:14px;-webkit-overflow-scrolling:touch;
@@ -216,6 +241,7 @@
 
   <div class="tabs">
     <button class="tab active" data-p="groups">Группы</button>
+    <button class="tab" data-p="matches">Матчи</button>
     <button class="tab" data-p="bracket">Плей-офф</button>
     <button class="tab" data-p="forecast">Кто победит</button>
   </div>
@@ -233,6 +259,16 @@
       <span class="lg-out"><i></i>вылет по прогнозу</span>
     </div>
     <div class="grid" id="groupGrid"></div>
+  </section>
+
+  <!-- ===== MATCHES ===== -->
+  <section class="panel" id="matches">
+    <div class="livebar" id="livebar2">
+      <span class="dot"></span>
+      <span class="txt" id="liveText2">Загрузка матчей…</span>
+      <button class="refresh" id="refreshBtn2">Обновить</button>
+    </div>
+    <div class="matchlist" id="matchList"></div>
   </section>
 
   <!-- ===== BRACKET ===== -->
@@ -494,6 +530,82 @@ async function refresh(){
 }
 refreshBtn.addEventListener('click', refresh);
 
+// ---- LIVE MATCHES (ESPN scoreboard, тоже без ключа) ----
+const livebar2  = document.getElementById('livebar2');
+const liveText2 = document.getElementById('liveText2');
+const refreshBtn2 = document.getElementById('refreshBtn2');
+const matchList = document.getElementById('matchList');
+const pad = n => String(n).padStart(2,'0');
+
+function setBar2(state, html){
+  livebar2.classList.remove('live','err');
+  if(state) livebar2.classList.add(state);
+  liveText2.innerHTML = html;
+}
+function teamCell(team, away, lose){
+  team = team || {};
+  const key  = matchKey(team);
+  const flag = key ? fl[key] : '🏳️';
+  const name = key ? nm[key] : (team.shortDisplayName||team.displayName||team.abbreviation||'—');
+  return `<div class="side ${away?'away':'home'} ${lose?'lose':''}"><span class="fl">${flag}</span><span class="nm">${name}</span></div>`;
+}
+function renderMatches(events){
+  if(!events.length){ matchList.innerHTML = `<div class="emptybox">На ближайшие дни матчей не найдено.</div>`; return; }
+  const evs = events.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
+  let html = '', curDay = '';
+  evs.forEach(ev=>{
+    const dt = new Date(ev.date);
+    const dayKey = dt.toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'});
+    if(dayKey !== curDay){ curDay = dayKey; html += `<div class="daylabel">${dayKey}</div>`; }
+    const comp = (ev.competitions && ev.competitions[0]) || {};
+    const cs   = comp.competitors || [];
+    const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
+    const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
+    const st   = (ev.status && ev.status.type) || {};
+    const state = st.state || 'pre';
+    const hhmm = dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    let stateTxt = '', scoreHtml = `<div class="score time">${hhmm}</div>`;
+    if(state==='in'){ stateTxt = st.shortDetail || 'LIVE'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
+    else if(state==='post'){ stateTxt = 'Заверш.'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
+    let hLose=false, aLose=false;
+    if(state==='post'){ const h=+home.score, a=+away.score; if(h<a) hLose=true; else if(a<h) aLose=true; }
+    html += `<div class="match ${state==='in'?'live':''}">
+      <div class="state">${stateTxt}</div>
+      ${teamCell(home.team, false, hLose)}
+      ${scoreHtml}
+      ${teamCell(away.team, true, aLose)}
+    </div>`;
+  });
+  matchList.innerHTML = html;
+}
+async function refreshMatches(){
+  refreshBtn2.disabled = true;
+  setBar2(null, 'Обновление…');
+  try{
+    const now = new Date();
+    const d0 = new Date(now); d0.setDate(d0.getDate()-1);
+    const d1 = new Date(now); d1.setDate(d1.getDate()+1);
+    const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${LIVE.league}/scoreboard?dates=${fmt(d0)}-${fmt(d1)}&limit=100`;
+    const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    const events = json.events || [];
+    renderMatches(events);
+    const time  = now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    const liveN = events.filter(e => e.status && e.status.type && e.status.type.state==='in').length;
+    if(!events.length) setBar2('err', 'Матчей на эти даты не найдено');
+    else if(liveN)     setBar2('live', `<b>${liveN} в прямом эфире</b> · обновлено ${time}`);
+    else               setBar2('live', `<b>Матчи ESPN</b> · обновлено ${time}`);
+  }catch(e){
+    matchList.innerHTML = `<div class="emptybox">Не удалось загрузить матчи (${e.message}).</div>`;
+    setBar2('err', '<b>Матчи недоступны</b>');
+  }finally{
+    refreshBtn2.disabled = false;
+  }
+}
+refreshBtn2.addEventListener('click', refreshMatches);
+
 // ---- BRACKET DATA (прогноз) ----
 const R32 = [
  [["Argentina",1],["Czechia",0]],[["Switzerland",0],["Senegal",1]],
@@ -550,8 +662,9 @@ document.querySelectorAll('.tab').forEach(t=>{
 // ---- INIT ----
 renderGroups();
 refresh();
+refreshMatches();
 if(LIVE.enabled && LIVE.refreshMs>0){
-  setInterval(()=>{ if(!document.hidden) refresh(); }, LIVE.refreshMs);
+  setInterval(()=>{ if(!document.hidden){ refresh(); refreshMatches(); } }, LIVE.refreshMs);
 }
 </script>
 </body>
