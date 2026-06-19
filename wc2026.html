@@ -409,14 +409,16 @@ const tlaToKey = {}, nameToKey = {};
 for(const [k,v] of Object.entries(apiMap)){
   tlaToKey[v.tla] = k;
   v.n.forEach(n => nameToKey[n] = k);
-  nameToKey[norm(nm[k])] = k; // ещё и русское название на всякий случай
 }
 function matchKey(team){
   if(!team) return null;
   const code = team.abbreviation || team.tla;          // ESPN: abbreviation, FD: tla
   if(code && tlaToKey[code]) return tlaToKey[code];
-  return nameToKey[norm(team.displayName)] || nameToKey[norm(team.shortDisplayName)]
-      || nameToKey[norm(team.shortName)]   || nameToKey[norm(team.name)] || null;
+  for(const cand of [team.displayName, team.shortDisplayName, team.shortName, team.name]){
+    const n = norm(cand);
+    if(n && nameToKey[n]) return nameToKey[n];          // только непустые совпадения
+  }
+  return null;
 }
 
 // ---- GROUP SNAPSHOT (fallback) ----
@@ -720,10 +722,16 @@ function renderQualifiers(){
 }
 
 // ---- ДИСПЕТЧЕР СЕТКИ: реальная (если есть) или проекция ----
+// сетка плей-офф «готова», только если обе команды реально определены (не заглушка TBD)
+function bracketReady(ev){
+  const comp = (ev.competitions && ev.competitions[0]) || {};
+  const cs   = comp.competitors || [];
+  return cs.length>=2 && cs.every(c => matchKey(c && c.team) !== null);
+}
 function renderBracket(){
   const ko = {R32:[],R16:[],QF:[],SF:[],'3RD':[],FIN:[]};
   let haveKO = false;
-  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r){ ko[r].push(ev); haveKO = true; } });
+  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r && bracketReady(ev)){ ko[r].push(ev); haveKO = true; } });
   const noteEl = document.getElementById('bracketNote');
   const qBox   = document.getElementById('qualifiers');
   if(haveKO){
