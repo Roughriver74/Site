@@ -546,13 +546,18 @@ function applyLive(json){
         if(d.played>0) anyPlayed = true;
       }
     });
-    // пересортировка по очкам, затем по разнице (статус-метки остаются на командах)
+    // пересортировка по очкам, затем по разнице
     data.rows.sort((a,b)=>{
       const pa=+a[1]||0, pb=+b[1]||0;
       if(pb!==pa) return pb-pa;
       return (parseInt(b[2])||0)-(parseInt(a[2])||0);
     });
-    if(anyPlayed) data.played = "в реальном времени";
+    // когда есть живые результаты — статус «кто проходит» считаем по факту:
+    // 1–2 место проходят, 3-е — кандидат в лучшие третьи, 4-е — вылет
+    if(anyPlayed){
+      data.rows.forEach((r,i)=>{ r[3] = i<2 ? 'q' : (i===2 ? 't3' : 'out'); });
+      data.played = "в реальном времени";
+    }
   }
   return matched;
 }
@@ -659,44 +664,64 @@ function roundOf(ev){
   if(/final/.test(note))             return 'FIN';
   return null; // групповой этап
 }
+// переводим английские заглушки ESPN («Semifinal 1 Winner» и т.п.) на русский
+function localizeSlot(raw){
+  if(!raw || /^tbd$/i.test(raw)) return '—';
+  return raw
+    .replace(/Round of 32/ig,'1/16').replace(/Round of 16/ig,'1/8')
+    .replace(/Quarter-?finals?/ig,'1/4').replace(/Semi-?finals?/ig,'1/2')
+    .replace(/Third[- ]place|3rd[- ]place/ig,'за 3-е')
+    .replace(/Winners?/ig,'победитель').replace(/Losers?/ig,'проигравший')
+    .replace(/Runner-?up/ig,'2-е место').replace(/Group/ig,'группа').replace(/Match/ig,'матч');
+}
 function realSlot(c, completed){
   c = c || {}; const team = c.team || {};
   const key = matchKey(team);
   let flag, name;
   if(key){ flag = fl[key]; name = nm[key]; }
-  else {
-    const raw = (team.displayName || team.shortDisplayName || '').trim();
-    flag = '';
-    name = (raw && !/^tbd$/i.test(raw)) ? raw : '—'; // ещё не определена
-  }
+  else { flag = ''; name = localizeSlot((team.displayName || team.shortDisplayName || '').trim()); }
   const win  = completed && c.winner===true;
   const lose = completed && c.winner===false;
   const sc   = (completed && c.score!=null) ? `<span class="sc">${c.score}</span>` : '';
   return `<div class="slot ${win?'win':(lose?'lose':'')}"><span class="fl">${flag}</span><span class="nm">${name}</span>${sc}</div>`;
 }
-function realTie(ev, isFinal){
+function realTie(ev, isFinal, label){
   const comp = (ev.competitions && ev.competitions[0]) || {};
   const cs   = comp.competitors || [];
   const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
   const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
   const completed = !!(ev.status && ev.status.type && ev.status.type.completed);
-  const dt = new Date(ev.date);
-  const dstr = dt.toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  return `<div class="tie ${isFinal?'final-tie':''}"><div class="tie-date">${dstr}</div>${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
+  const dstr = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  return `<div class="tie ${isFinal?'final-tie':''}"><div class="tie-date">${label} · ${dstr}</div>${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
+}
+function championOf(finEvents){
+  const ev = (finEvents||[]).find(e=> e.status && e.status.type && e.status.type.completed);
+  if(!ev) return '';
+  const cs = (ev.competitions && ev.competitions[0] && ev.competitions[0].competitors) || [];
+  const w  = cs.find(c=> c.winner===true); if(!w) return '';
+  const key= matchKey(w.team);
+  const flag = key ? fl[key] : ''; const name = key ? nm[key] : ((w.team&&w.team.displayName)||'');
+  return `<div class="champ"><div class="cap">Чемпион</div><div class="who"><span class="fl">${flag}</span> ${name}</div></div>`;
 }
 function renderRealBracket(ko){
-  const cols = [['R32','1/16'],['R16','1/8'],['QF','1/4'],['SF','1/2'],['FIN','Финал']];
+  const cols = [['R32','1/16'],['R16','1/8'],['QF','1/4'],['SF','1/2']];
   let html = '';
   cols.forEach(([k,label])=>{
     const evs = (ko[k]||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
     if(!evs.length) return;
-    let inner = evs.map(ev=> realTie(ev, k==='FIN')).join('');
-    if(k==='FIN' && (ko['3RD']||[]).length){
-      inner += `<div class="round-title" style="margin-top:14px">Матч за 3-е место</div>` +
-               ko['3RD'].map(ev=> realTie(ev,false)).join('');
-    }
-    html += `<div class="round"><div class="round-title">${label}</div>${inner}</div>`;
+    html += `<div class="round"><div class="round-title">${label}</div>${evs.map(ev=> realTie(ev,false,label)).join('')}</div>`;
   });
+  // последний столбец: финал + матч за 3-е место + чемпион
+  const fin  = (ko['FIN']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const third= (ko['3RD']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+  if(fin.length || third.length){
+    let inner = fin.map(ev=> realTie(ev,true,'Финал')).join('') + championOf(fin);
+    if(third.length){
+      inner += `<div class="round-title" style="margin-top:16px">За 3-е место</div>` +
+               third.map(ev=> realTie(ev,false,'За 3-е')).join('');
+    }
+    html += `<div class="round"><div class="round-title">Финал</div>${inner}</div>`;
+  }
   return html;
 }
 
@@ -745,7 +770,7 @@ function renderBracket(){
   const noteEl = document.getElementById('bracketNote');
   if(haveKO){
     document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
-    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. Команды подставляются по мере жеребьёвки и результатов. Прогноз чемпиона — во вкладке «Кто победит».';
+    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. На каждом матче подписан раунд (последний столбец — финал и матч за 3-е место). Команды подставляются по мере жеребьёвки. <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3). Прогноз чемпиона — во вкладке «Кто победит».';
   }else{
     renderProjection();
     noteEl.innerHTML = 'Матчи плей-офф ещё не в расписании ESPN. Даты раундов — официальный календарь ЧМ-2026 (1/16 с 28 июня, финал 19 июля). Пары и проходы ниже — <b>прогноз</b>; реальная сетка с датой и временем появится автоматически.';
