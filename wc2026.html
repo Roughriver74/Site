@@ -123,7 +123,7 @@
   .lg-out i{background:var(--line)}
 
   /* Group grid */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
   .card{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
     border-radius:16px;overflow:hidden}
   .ghead{display:flex;align-items:baseline;justify-content:space-between;padding:14px 16px 10px;gap:10px}
@@ -195,19 +195,19 @@
   .match .lose{color:var(--muted)}
   .emptybox{color:var(--muted);font-size:14px;text-align:center;padding:30px 10px}
   @media(max-width:560px){
-    .match{gap:8px;padding:11px 11px}
-    .match .side{gap:7px}
+    .match{gap:8px;padding:10px 10px}
+    .match .side{gap:6px}
     .match .side .fl{font-size:18px}
-    .match .side .nm{font-size:13px}
-    .match .state{flex-basis:46px;font-size:9px}
-    .match .score{font-size:16px;min-width:46px;padding:0 2px}
+    .match .side .nm{font-size:12px}
+    .match .state{flex-basis:42px;font-size:9px}
+    .match .score{font-size:15px;min-width:42px;padding:0 2px}
   }
 
   /* Bracket — секции по раундам: 1 колонка на телефоне, авто-сетка на широком */
   .scrollhint{display:none}
-  .bracket-scroll{overflow:visible}
+  .bracket-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
   .bracket{display:flex;flex-direction:column;gap:24px;min-width:0;padding:2px}
-  .round{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:10px;align-content:start}
+  .round{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;align-content:start}
   .round-title{grid-column:1/-1;font-family:'Oswald';text-transform:uppercase;letter-spacing:.08em;
     font-size:15px;color:var(--cyan);font-weight:600;padding-bottom:7px;border-bottom:1px solid var(--line)}
   .round-sub{grid-column:1/-1;font-family:'Oswald';text-transform:uppercase;letter-spacing:.08em;
@@ -232,7 +232,7 @@
   .champ .who .fl{font-size:26px}
 
   /* Forecast panel cards */
-  .fcast{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:6px}
+  .fcast{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
   .fc{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
     border-radius:16px;padding:18px}
   .fc .rk{font-family:'Oswald';font-size:34px;font-weight:700;line-height:1}
@@ -246,20 +246,87 @@
 
   footer{margin-top:40px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
 
+  /* Tablet breakpoint — 2 колонки вместо плотной auto-fill */
+  @media(max-width:840px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .fcast{grid-template-columns:repeat(2,1fr)}
+    .qualgrid{grid-template-columns:repeat(2,1fr)}
+  }
+
   @media(max-width:560px){
     header{padding-top:calc(20px + var(--sat))}
     .sub{font-size:14px}
-    .grid{grid-template-columns:1fr}
-    td{padding:11px 14px}
-    th{padding:4px 14px}
-    td.name{gap:8px}
-    .tab{padding:10px 15px;font-size:13px}
-    .fcast{grid-template-columns:1fr}
-    .round{grid-template-columns:1fr}            /* сетка плей-офф — в одну колонку */
+    .grid{grid-template-columns:1fr;gap:10px}
+    td{padding:9px 12px}
+    th{padding:4px 12px}
+    td.name{gap:7px;font-size:13px}
+    td.name .fl{font-size:16px}
+    .tab{padding:10px 14px;font-size:12px;min-height:40px}
+    .fcast{grid-template-columns:1fr;gap:10px}
+    .round{grid-template-columns:1fr;gap:8px}            /* сетка плей-офф — в одну колонку */
     .round-title{font-size:14px}
     .qualgrid{grid-template-columns:1fr;gap:10px}
     .champ .who{font-size:24px}
     .pill{font-size:12px}
+    .qteam{font-size:12px;padding:6px 8px}
+    .fc{padding:14px}
+    .fc .rk{font-size:28px}
+    .fc h3{font-size:17px}
+    .fc p{font-size:12px}
+    .livebar{padding:8px 12px;font-size:12px}
+    .livebar .refresh{padding:7px 12px;font-size:11px}
+    .legend{font-size:12px;gap:10px}
+    .note{font-size:12px;padding:7px 12px}
+    .ghead{padding:12px 12px 8px}
+    .ghead .gl{font-size:18px}
+    .ghead .status{font-size:10px}
+    .slot{padding:9px 10px;font-size:13px;gap:7px}
+    .slot .fl{font-size:15px}
+    .tie-date{font-size:9px;padding:4px 5px 2px}
+  }
+
+  /* Very small phones (iPhone SE, older Androids) */
+  @media(max-width:380px){
+    .wrap{padding-left:10px;padding-right:10px}
+    h1{font-size:38px}
+    .kicker{font-size:10px;letter-spacing:.2em}
+    .sub{font-size:13px}
+    .hosts{font-size:12px;gap:6px}
+    .hosts span{padding:5px 9px;font-size:12px}
+    .tab{padding:8px 11px;font-size:11px;min-height:36px;letter-spacing:.03em}
+    .tabs{gap:6px;margin:16px 0 14px}
+    td{padding:8px 10px}
+    th{padding:3px 10px;font-size:9px}
+    td.name{font-size:12px;gap:6px}
+    td.name .fl{font-size:14px}
+    td.pts,td.gd{font-size:13px}
+    .match{padding:10px 8px;gap:6px}
+    .match .side{gap:5px}
+    .match .side .fl{font-size:16px}
+    .match .side .nm{font-size:12px}
+    .match .state{flex-basis:38px;font-size:8px}
+    .match .score{font-size:14px;min-width:38px;padding:0 1px}
+    .chip{padding:7px 11px;font-size:11px;min-height:34px}
+    .livebar{padding:7px 10px;font-size:11px;gap:6px}
+    .livebar .refresh{padding:6px 10px;font-size:10px;min-height:32px}
+    .legend{font-size:11px;gap:8px}
+    .note{font-size:11px;padding:6px 10px}
+    .ghead .gl{font-size:16px}
+    .ghead .gl small{font-size:11px}
+    .ghead .status{font-size:9px}
+    .slot{padding:8px 8px;font-size:12px;gap:5px}
+    .slot .fl{font-size:14px}
+    .tie-date{font-size:8px;padding:3px 4px 2px}
+    .qteam{font-size:11px;padding:5px 7px;gap:6px}
+    .qteam .fl{font-size:14px}
+    .fc{padding:12px}
+    .fc .rk{font-size:24px}
+    .fc h3{font-size:15px}
+    .champ .who{font-size:20px}
+    .champ .who .fl{font-size:20px}
+    .pill{font-size:11px;padding:6px 10px}
+    .daylabel{font-size:11px}
+    footer{font-size:11px}
   }
 </style>
 </head>
