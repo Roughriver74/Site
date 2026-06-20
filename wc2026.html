@@ -723,23 +723,101 @@ function scrollToNearest(){
 }
 
 // ---- СЕТКА ПЛЕЙ-ОФФ ИЗ ДАННЫХ ----
-// раунд определяем ПО ДАТЕ (офиц. календарь ЧМ-2026, по времени хозяев) —
-// надёжно даже когда команды ещё не определены и ESPN не присылает название раунда
+// Раунд определяем двумя способами:
+// 1) season.slug из ESPN — авторитетный признак раунда
+// 2)fallback — по дате (офиц. календарь ЧМ-2026)
 function roundByDate(iso){
   let s;
-  try{ s = new Date(iso).toLocaleDateString('en-CA',{timeZone:'America/New_York'}); } // YYYY-MM-DD
+  try{ s = new Date(iso).toLocaleDateString('en-CA',{timeZone:'America/New_York'}); }
   catch(e){ s = new Date(iso).toISOString().slice(0,10); }
   const M = +s.slice(5,7), D = +s.slice(8,10);
   if(M===6 && D>=11 && D<=27) return null;                 // групповой этап
   if((M===6 && D>=28) || (M===7 && D<=3)) return 'R32';    // 1/16: 28 июн – 3 июл
   if(M===7 && D>=4  && D<=7)  return 'R16';                // 1/8:  4 – 7 июл
   if(M===7 && D>=9  && D<=11) return 'QF';                 // 1/4:  9 – 11 июл
-  if(M===7 && D>=14 && D<=15) return 'SF';                 // 1/2:  14 – 15 июл
+  if(M===7 && D>=14 && D<=15) return 'SF';                  // 1/2:  14 – 15 июл
   if(M===7 && D===18) return '3RD';                        // за 3-е: 18 июл
   if(M===7 && D===19) return 'FIN';                        // финал: 19 июл
   return null;
 }
-function roundOf(ev){ return roundByDate(ev.date); }
+const SLUG_TO_ROUND = {
+  'round-of-32':'R32', 'round-of-16':'R16', 'quarterfinals':'QF',
+  'semifinals':'SF', '3rd-place-match':'3RD', 'final':'FIN'
+};
+function roundOf(ev){
+  const slug = ev?.season?.slug || '';
+  if(SLUG_TO_ROUND[slug]) return SLUG_TO_ROUND[slug];
+  return roundByDate(ev.date);
+}
+
+// ---- РАЗРЕШЕНИЕ PLACEHOLDER-ИМЁН ЧЕРЕЗ ЖИВЫЕ ТАБЛИЦЫ ГРУПП ----
+// ESPN отдаёт имена вроде "Group A 2nd Place", "Group C Winner",
+// "Third Place Group A/B/C/D/F" — мы пытаемся подставить реальную команду
+// из текущих таблиц групп. Если группа ещё не играла — оставляем placeholder.
+let assignedThirds = new Set();  // какие 3-е места уже распределены по слотам
+
+function groupStarted(g){
+  const d = groups[g];
+  return d && d.rows && d.rows[0] && d.rows[0][1] !== '–' && d.rows[0][1] !== '';
+}
+
+function resolveGroupPosition(group, pos){
+  if(!groupStarted(group)) return null;  // группа не играла — оставляем placeholder
+  const d = groups[group];
+  const row = d.rows[pos - 1];
+  if(!row) return null;
+  const key = row[0];
+  return { key, flag: fl[key] || '', name: nm[key] || key };
+}
+
+function resolveThirdPlace(groupLetters){
+  // Среди указанных групп ищем лучшую 3-ю команду, ещё не назначенную в другой слот
+  const cands = [];
+  for(const g of groupLetters){
+    if(!groupStarted(g)) continue;
+    const d = groups[g];
+    const row = d.rows[2];
+    if(!row) continue;
+    const key = row[0];
+    if(assignedThirds.has(key)) continue;
+    cands.push({ key, g, pts:+row[1]||0, gd:parseInt(row[2])||0 });
+  }
+  if(!cands.length) return null;
+  cands.sort((a,b)=> b.pts-a.pts || b.gd-a.gd);
+  const best = cands[0];
+  assignedThirds.add(best.key);
+  return { key: best.key, flag: fl[best.key]||'', name: nm[best.key]||best.key };
+}
+
+// Пытается разобрать placeholder-имя ESPN и вернуть реальную команду.
+// Возвращает {key, flag, name} или null (если не получилось / группа не играла).
+function resolvePlaceholder(team){
+  if(!team) return null;
+  // Сначала проверим — может это уже реальная команда
+  const key = matchKey(team);
+  if(key) return { key, flag: fl[key], name: nm[key] };
+
+  const name  = (team.displayName  || '').trim();
+  const abbrev = (team.abbreviation || '').trim();
+
+  // Компактная аббревиатура: 1A, 2B, 3C
+  const cm = abbrev.match(/^([123])([A-L])$/i);
+  if(cm) return resolveGroupPosition(cm[2].toUpperCase(), +cm[1]);
+
+  // "Group X Winner" / "Group X 2nd Place" / "Group X Runner-up"
+  const gm = name.match(/^group\s+([A-L])\s+(winner|2nd\s+place|runner-?up)/i);
+  if(gm){
+    const g = gm[1].toUpperCase();
+    const pos = /winner|1st/i.test(gm[2]) ? 1 : 2;
+    return resolveGroupPosition(g, pos);
+  }
+
+  // "Third Place Group A/B/C/D/F"
+  const tm = name.match(/^third\s+place\s+groups?\s+([A-L](?:\/[A-L])*)/i);
+  if(tm) return resolveThirdPlace(tm[1].toUpperCase().split('/'));
+
+  return null;
+}
 
 // подписи участников по-русски: «Победитель 1/4 финала», «Победитель группы A», «2-е место группы B»
 function localizeSlot(raw){
@@ -789,14 +867,30 @@ function localizeSlot(raw){
 }
 function realSlot(c, completed){
   c = c || {}; const team = c.team || {};
-  const key = matchKey(team);
-  let flag, name;
-  if(key){ flag = fl[key]; name = nm[key]; }
-  else { flag = ''; name = localizeSlot((team.displayName || team.shortDisplayName || '').trim()); }
+  let key, flag, name;
+  
+  // Сначала пытаемся сопоставить с реальной командой через matchKey
+  key = matchKey(team);
+  
+  // Если не вышло — пытаемся разрешить placeholder через живые таблицы групп
+  if(!key){
+    const resolved = resolvePlaceholder(team);
+    if(resolved){
+      key = resolved.key; flag = resolved.flag; name = resolved.name;
+    }
+  }
+  
+  // Если и placeholder не разрешился — показываем локализованный placeholder
+  if(!key){
+    flag = ''; name = localizeSlot((team.displayName || team.shortDisplayName || '').trim());
+  } else if(flag === undefined) {
+    flag = fl[key]; name = nm[key];
+  }
+  
   const win  = completed && c.winner===true;
   const lose = completed && c.winner===false;
   const sc   = (completed && c.score!=null) ? `<span class="sc">${c.score}</span>` : '';
-  return `<div class="slot ${win?'win':(lose?'lose':'')}"><span class="fl">${flag}</span><span class="nm">${name}</span>${sc}</div>`;
+  return `<div class="slot ${win?'win':(lose?'lose':'')}"><span class="fl">${flag||''}</span><span class="nm">${name}</span>${sc}</div>`;
 }
 function realTie(ev, isFinal, label){
   const comp = (ev.competitions && ev.competitions[0]) || {};
@@ -877,13 +971,14 @@ function renderQualifiers(){
 // ---- ДИСПЕТЧЕР СЕТКИ: реальная (если есть) или проекция ----
 function renderBracket(){
   // берём реальные матчи плей-офф из ESPN — с датой и временем, даже если команды ещё TBD
+  assignedThirds = new Set();  // сброс: при каждом рендере заново распределяем 3-и места
   const ko = {R32:[],R16:[],QF:[],SF:[],'3RD':[],FIN:[]};
   let haveKO = false;
   allEvents.forEach(ev=>{ const r = roundOf(ev); if(r){ ko[r].push(ev); haveKO = true; } });
   const noteEl = document.getElementById('bracketNote');
   if(haveKO){
     document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
-    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. На каждом матче подписан раунд (последний столбец — финал и матч за 3-е место). Команды подставляются по мере жеребьёвки. <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3). Прогноз чемпиона — во вкладке «Кто победит».';
+    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. Команды из групп, где игры уже идут, <b>подставляются автоматически</b> из текущих таблиц. Команды из групп, которые ещё не стартовали, показаны как «Победитель группы X» / «2-е место» / «3-е место» — они появятся, когда группы доиграют. <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3).';
   }else{
     renderProjection();
     noteEl.innerHTML = 'Матчи плей-офф ещё не в расписании ESPN. Даты раундов — официальный календарь ЧМ-2026 (1/16 с 28 июня, финал 19 июля). Пары и проходы ниже — <b>прогноз</b>; реальная сетка с датой и временем появится автоматически.';
