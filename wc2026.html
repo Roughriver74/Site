@@ -608,8 +608,8 @@ const isToday = iso => { const d=new Date(iso), n=new Date();
 function teamCell(team, away, lose){
   team = team || {};
   const key  = matchKey(team);
-  const flag = key ? fl[key] : '🏳️';
-  const name = key ? nm[key] : (team.shortDisplayName||team.displayName||team.abbreviation||'—');
+  const flag = key ? fl[key] : '';
+  const name = key ? nm[key] : localizeSlot((team.displayName||team.shortDisplayName||'').trim());
   return `<div class="side ${away?'away':'home'} ${lose?'lose':''}"><span class="fl">${flag}</span><span class="nm">${name}</span></div>`;
 }
 
@@ -656,25 +656,67 @@ function scrollToNearest(){
 }
 
 // ---- СЕТКА ПЛЕЙ-ОФФ ИЗ ДАННЫХ ----
-// определяем раунд матча по заголовку ESPN (notes[].headline)
-function roundOf(ev){
-  const comp = (ev.competitions && ev.competitions[0]) || {};
-  const note = ((comp.notes && comp.notes[0] && comp.notes[0].headline) || ev.name || '').toLowerCase();
-  if(/round of 32|1\/16/.test(note)) return 'R32';
-  if(/round of 16|1\/8/.test(note))  return 'R16';
-  if(/quarter|1\/4/.test(note))      return 'QF';
-  if(/semi|1\/2/.test(note))         return 'SF';
-  if(/third place|3rd place|play-?off for third|за 3/.test(note)) return '3RD';
-  if(/final/.test(note))             return 'FIN';
-  return null; // групповой этап
+// раунд определяем ПО ДАТЕ (офиц. календарь ЧМ-2026, по времени хозяев) —
+// надёжно даже когда команды ещё не определены и ESPN не присылает название раунда
+function roundByDate(iso){
+  let s;
+  try{ s = new Date(iso).toLocaleDateString('en-CA',{timeZone:'America/New_York'}); } // YYYY-MM-DD
+  catch(e){ s = new Date(iso).toISOString().slice(0,10); }
+  const M = +s.slice(5,7), D = +s.slice(8,10);
+  if(M===6 && D>=11 && D<=27) return null;                 // групповой этап
+  if((M===6 && D>=28) || (M===7 && D<=3)) return 'R32';    // 1/16: 28 июн – 3 июл
+  if(M===7 && D>=4  && D<=7)  return 'R16';                // 1/8:  4 – 7 июл
+  if(M===7 && D>=9  && D<=11) return 'QF';                 // 1/4:  9 – 11 июл
+  if(M===7 && D>=14 && D<=15) return 'SF';                 // 1/2:  14 – 15 июл
+  if(M===7 && D===18) return '3RD';                        // за 3-е: 18 июл
+  if(M===7 && D===19) return 'FIN';                        // финал: 19 июл
+  return null;
 }
-// переводим английские заглушки ESPN («Semifinal 1 Winner» и т.п.) на русский
+function roundOf(ev){ return roundByDate(ev.date); }
+
+// подписи участников по-русски: «Победитель 1/4 финала», «Победитель группы A», «2-е место группы B»
 function localizeSlot(raw){
-  if(!raw || /^tbd$/i.test(raw)) return '—';
-  return raw
-    .replace(/Round of 32/ig,'1/16').replace(/Round of 16/ig,'1/8')
-    .replace(/Quarter-?finals?/ig,'1/4').replace(/Semi-?finals?/ig,'1/2')
-    .replace(/Third[- ]place|3rd[- ]place/ig,'за 3-е')
+  if(!raw) return '—';
+  const s = raw.trim();
+  if(s==='' || /^tbd$/i.test(s)) return '—';
+
+  // компактный формат «1A / 2B / 3C»
+  const cm = s.match(/^([123])\s?([A-L])$/i);
+  if(cm){ const g=cm[2].toUpperCase();
+    return cm[1]==='1' ? `Победитель группы ${g}` : cm[1]==='2' ? `2-е место группы ${g}` : `3-е место группы ${g}`; }
+
+  // фид из группы: «Group A Winner», «Group B Runner-up», «3rd Place Group C/D/F»
+  if(/group/i.test(s)){
+    const lm = s.match(/groups?\s+([A-L](?:\/[A-L])*)/i);   // буквы только после слова Group
+    const letters = lm ? lm[1].toUpperCase() : '';
+    if(/runner-?up|2nd/i.test(s)) return `2-е место группы ${letters}`.trim();
+    if(/3rd|third/i.test(s))      return `3-е место (${letters})`.trim();
+    if(/winner|1st/i.test(s))     return `Победитель группы ${letters}`.trim();
+  }
+  // фид из плей-офф: «Semifinal 1 Winner», «Round of 16 8 Loser»
+  let rl = '';
+  if(/round of 32/i.test(s)) rl='1/16 финала';
+  else if(/round of 16/i.test(s)) rl='1/8 финала';
+  else if(/quarter-?final/i.test(s)) rl='1/4 финала';
+  else if(/semi-?final/i.test(s)) rl='1/2 финала';
+  if(rl){
+    const rest = s.replace(/round of 32|round of 16|quarter-?finals?|semi-?finals?/ig,'');
+    const num  = (rest.match(/\d{1,2}/)||[])[0] || '';
+    const who  = /loser/i.test(s) ? 'Проигравший' : 'Победитель';
+    return `${who} ${rl}${num?` (${num})`:''}`;
+  }
+  // запасной разбор по номеру матча: «Winner Match 95», «W101»
+  const mn = (s.match(/\b(\d{1,3})\b/)||[])[1];
+  if(mn && /winner|loser|^w|^l/i.test(s)){
+    const n=+mn, who=/loser|^l/i.test(s)?'Проигравший':'Победитель';
+    if(n>=73&&n<=88) return `${who} 1/16 финала`;
+    if(n>=89&&n<=96) return `${who} 1/8 финала`;
+    if(n>=97&&n<=100) return `${who} 1/4 финала`;
+    if(n>=101&&n<=102) return `${who} 1/2 финала`;
+  }
+  // общий случай
+  return s.replace(/Round of 32/ig,'1/16').replace(/Round of 16/ig,'1/8')
+    .replace(/Quarter-?finals?/ig,'1/4 финала').replace(/Semi-?finals?/ig,'1/2 финала')
     .replace(/Winners?/ig,'победитель').replace(/Losers?/ig,'проигравший')
     .replace(/Runner-?up/ig,'2-е место').replace(/Group/ig,'группа').replace(/Match/ig,'матч');
 }
