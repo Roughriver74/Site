@@ -250,6 +250,20 @@
   .champ .who{font-family:'Oswald';font-size:28px;font-weight:700;margin-top:4px}
   .champ .who .fl{font-size:26px}
 
+  /* Горизонтальная сетка-дерево с соединительными линиями (как у BBC) */
+  .hbracket{position:relative;display:flex;align-items:stretch;gap:26px;padding:6px 2px 10px;min-width:max-content}
+  .hround{display:flex;flex-direction:column;min-width:152px;flex:0 0 auto}
+  .hround-head{flex:0 0 auto;font-family:'Oswald';text-transform:uppercase;letter-spacing:.07em;
+    font-size:13px;color:var(--cyan);font-weight:600;text-align:center;padding-bottom:10px;line-height:1.2}
+  .hround-head .hrd{display:block;font-size:9.5px;color:var(--muted);letter-spacing:.02em;font-weight:500;margin-top:2px}
+  .hstack{flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-around;min-height:0}
+  .htie{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    position:relative;z-index:1}
+  .htie.final-tie{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,201,75,.3),0 8px 26px rgba(255,201,75,.10)}
+  .connlayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
+  .thirdwrap{margin-top:14px}
+  .htie.t3tie{max-width:260px}
+
   /* Forecast panel cards */
   .fcast{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
   .fc{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
@@ -605,27 +619,76 @@ function stat(stats, ...keys){
   return null;
 }
 
+function gd2str(gd){ return gd==null ? '' : (gd>0 ? '+'+gd : ''+gd); }
+
+// извлекает pts / gd / played из stats[] одной строки ESPN
+function readStats(stats){
+  const pts = stat(stats,'points');
+  const played = stat(stats,'gamesplayed','gamesPlayed');
+  let gd = stat(stats,'pointdifferential','pointDifferential');
+  if(gd==null){
+    const gf = stat(stats,'pointsfor','pointsFor'), ga = stat(stats,'pointsagainst','pointsAgainst');
+    if(gf!=null && ga!=null) gd = gf-ga;
+  }
+  return { pts, gd, played };
+}
+
+// Регистрирует команду из ESPN и возвращает наш ключ. Незнакомую сборную
+// (нет в словарях) заводим на лету — чтобы реальный состав групп всегда отображался.
+function registerTeam(team){
+  team = team || {};
+  let key = matchKey(team);
+  if(key) return key;
+  const ab = (team.abbreviation || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  key = ab || norm(team.displayName || team.shortDisplayName || team.name || '') || 'UNK';
+  if(!nm[key]) nm[key] = team.shortDisplayName || team.displayName || team.name || ab || '—';
+  if(!(key in fl)) fl[key] = '';   // эмодзи-флага для незнакомой сборной нет — покажем без него
+  return key;
+}
+
+// Пересобирает состав групп напрямую из ESPN — настоящие группы A–L с реальными
+// командами, а не из встроенного посева. Возвращает {data, count, matched}.
+function rebuildGroups(nodes){
+  const data = {}; let matched = 0;
+  nodes.forEach(node=>{
+    const gname = node.name || node.displayName || node.abbreviation || '';
+    const lm = String(gname).match(/group\s+([A-L])\b/i);
+    if(!lm) return;
+    const L = lm[1].toUpperCase();
+    const entries = (node.standings && node.standings.entries) || node.entries || [];
+    if(!entries.length) return;
+    const rows = entries.map(en=>{
+      const key = registerTeam(en.team);
+      const s = readStats(en.stats);
+      if(s.pts!=null) matched++;
+      return { key, ...s };
+    });
+    rows.sort((a,b)=> (b.pts||0)-(a.pts||0) || (b.gd||0)-(a.gd||0));
+    const anyPlayed = rows.some(r=> r.played>0);
+    data[L] = {
+      played: anyPlayed ? 'в реальном времени' : 'ещё не играли',
+      rows: rows.map((r,i)=> [ r.key, r.pts!=null ? r.pts : '–', gd2str(r.gd), i<2?'q':(i===2?'t3':'out') ])
+    };
+  });
+  return { data, count: Object.keys(data).length, matched };
+}
+
 function applyLive(json){
-  // ESPN: { children:[ {name:"Group A", standings:{ entries:[ {team, stats[]} ] }} ] }
-  // строим карту key -> {pts, gd, played}
+  const nodes = (json.children && json.children.length) ? json.children : [json];
+  // 1) Главный путь: пересобрать настоящие группы из ESPN (реальный состав).
+  const rb = rebuildGroups(nodes);
+  if(rb.count >= 1){
+    Object.assign(groups, rb.data); // перезаписываем буквы, которые отдал ESPN; остальные остаются из снимка
+    return rb.matched;
+  }
+  // 2) Фолбэк (плоские standings без имён групп): домёрживаем очки в снимок.
   const live = {};
-  const groupsNode = (json.children && json.children.length)
-        ? json.children
-        : [json]; // запасной случай: плоские standings без групп
-  groupsNode.forEach(node=>{
+  nodes.forEach(node=>{
     const entries = (node.standings && node.standings.entries) || node.entries || [];
     entries.forEach(en=>{
       const key = matchKey(en.team);
       if(!key) return;
-      const pts    = stat(en.stats,'points');
-      const played = stat(en.stats,'gamesplayed','gamesPlayed');
-      let gd       = stat(en.stats,'pointdifferential','pointDifferential');
-      if(gd==null){
-        const gf = stat(en.stats,'pointsfor','pointsFor');
-        const ga = stat(en.stats,'pointsagainst','pointsAgainst');
-        if(gf!=null && ga!=null) gd = gf-ga;
-      }
-      live[key] = { pts, gd, played };
+      live[key] = readStats(en.stats);
     });
   });
   let matched = 0;
@@ -634,20 +697,16 @@ function applyLive(json){
     data.rows.forEach(r=>{
       const d = live[r[0]];
       if(d && d.pts!=null){
-        matched++;
-        r[1] = d.pts;
-        if(d.gd!=null) r[2] = d.gd>0 ? '+'+d.gd : ''+d.gd;
+        matched++; r[1] = d.pts;
+        if(d.gd!=null) r[2] = gd2str(d.gd);
         if(d.played>0) anyPlayed = true;
       }
     });
-    // пересортировка по очкам, затем по разнице
     data.rows.sort((a,b)=>{
       const pa=+a[1]||0, pb=+b[1]||0;
       if(pb!==pa) return pb-pa;
       return (parseInt(b[2])||0)-(parseInt(a[2])||0);
     });
-    // когда есть живые результаты — статус «кто проходит» считаем по факту:
-    // 1–2 место проходят, 3-е — кандидат в лучшие третьи, 4-е — вылет
     if(anyPlayed){
       data.rows.forEach((r,i)=>{ r[3] = i<2 ? 'q' : (i===2 ? 't3' : 'out'); });
       data.played = "в реальном времени";
@@ -1145,16 +1204,15 @@ function projSlot(team, isWin){
   return `<div class="slot ${isWin?'win':''} ${team.key?'':'tbd'}">${cc}` +
          `<span class="fl">${team.flag}</span><span class="nm">${team.name}</span></div>`;
 }
-function projTie(a,b,isFinal,label){
+function htie(a,b,isFinal){
   const w = projWinner(a,b);
-  const lab = label ? `<div class="tie-date">${label}</div>` : '';
-  return `<div class="tie ${isFinal?'final-tie':''}">${lab}${projSlot(a, w===a)}${projSlot(b, w===b)}</div>`;
+  return `<div class="htie ${isFinal?'final-tie':''}">${projSlot(a, w===a)}${projSlot(b, w===b)}</div>`;
 }
-function projRound(title, ties, sub){
-  const s = sub ? `<div class="round-date">${sub}</div>` : '';
-  return `<div class="round"><div class="round-title">${title}</div>${s}${ties}</div>`;
+function hround(title, sub, tiesHtml){
+  const s = sub ? `<span class="hrd">${sub}</span>` : '';
+  return `<div class="hround"><div class="hround-head">${title}${s}</div><div class="hstack">${tiesHtml}</div></div>`;
 }
-// прогон победителей по дереву: на вход массив пар, на выход массив победителей
+// прогон победителей по дереву: на вход массив победителей, на выход — пары соседних
 function nextRound(winnersArr){
   const pairs = [];
   for(let i=0;i<winnersArr.length;i+=2) pairs.push([winnersArr[i], winnersArr[i+1]]);
@@ -1173,21 +1231,57 @@ function renderProjection(){
   const sfLose= sf.map(([a,b])=> projLoser(a,b));
   // финал + матч за 3-е место + чемпион
   const champ = projWinner(wsf[0], wsf[1]);
+  const col   = ties => ties.map(([a,b])=> htie(a,b,false)).join('');
 
-  const html32 = r32.map(([a,b])=> projTie(a,b,false,'')).join('');
-  const html16 = r16.map(([a,b])=> projTie(a,b,false,'')).join('');
-  const htmlQF = qf.map(([a,b])=> projTie(a,b,false,'')).join('');
-  const htmlSF = sf.map(([a,b])=> projTie(a,b,false,'')).join('');
+  const hb =
+    `<div class="hbracket">` +
+      hround('1/16','финала · '+D.R32, col(r32)) +
+      hround('1/8','финала · '+D.R16, col(r16)) +
+      hround('1/4','финала · '+D.QF, col(qf)) +
+      hround('1/2','финала · '+D.SF, col(sf)) +
+      hround('Финал', D.FIN, htie(wsf[0], wsf[1], true)) +
+      `<svg class="connlayer" aria-hidden="true"></svg>` +
+    `</div>`;
   const champBlock = `<div class="champ"><div class="cap">Чемпион · как есть</div>` +
     `<div class="who"><span class="fl">${champ.flag}</span> ${champ.name}</div></div>`;
-  const htmlFIN = projTie(wsf[0], wsf[1], true, '') +
-    `<div class="round-sub">Матч за 3-е место</div>` + projTie(sfLose[0], sfLose[1], false, '') + champBlock;
+  const w3rd = projWinner(sfLose[0], sfLose[1]);
+  const thirdBlock = `<div class="thirdwrap"><div class="round-sub">Матч за 3-е место</div>` +
+    `<div class="htie t3tie">${projSlot(sfLose[0], w3rd===sfLose[0])}${projSlot(sfLose[1], w3rd===sfLose[1])}</div></div>`;
 
-  document.getElementById('bracketEl').innerHTML =
-    projRound('1/16 финала', html32, D.R32) + projRound('1/8 финала', html16, D.R16) +
-    projRound('1/4 финала', htmlQF, D.QF) + projRound('1/2 финала', htmlSF, D.SF) +
-    projRound('Финал', htmlFIN, D.FIN);
+  document.getElementById('bracketEl').innerHTML = hb + champBlock + thirdBlock;
+  requestAnimationFrame(drawProjConnectors);
 }
+// Рисуем соединительные линии (как зелёные у BBC) между раундами по фактическим
+// координатам пар: правый край пары → середина → левый край пары следующего раунда.
+function drawProjConnectors(){
+  const host = document.getElementById('bracketEl');
+  const bracket = host && host.querySelector('.hbracket');
+  const svg = bracket && bracket.querySelector('.connlayer');
+  if(!bracket || !svg) return;
+  const br = bracket.getBoundingClientRect();
+  if(br.width < 20 || br.height < 20) return;   // панель скрыта — измерять нечего
+  svg.setAttribute('width', br.width);
+  svg.setAttribute('height', br.height);
+  svg.setAttribute('viewBox', `0 0 ${br.width} ${br.height}`);
+  const rounds = [...bracket.querySelectorAll('.hround')];
+  let d = '';
+  for(let r=0; r<rounds.length-1; r++){
+    const src = [...rounds[r].querySelectorAll('.htie')];
+    const dst = [...rounds[r+1].querySelectorAll('.htie')];
+    src.forEach((tie,i)=>{
+      const target = dst[Math.floor(i/2)];
+      if(!target) return;
+      const a = tie.getBoundingClientRect(), b = target.getBoundingClientRect();
+      const x1 = a.right - br.left, y1 = a.top - br.top + a.height/2;
+      const x2 = b.left  - br.left, y2 = b.top - br.top + b.height/2;
+      const mx = x1 + (x2 - x1)/2;
+      d += `M${x1} ${y1} H${mx} V${y2} H${x2} `;
+    });
+  }
+  svg.innerHTML = `<path d="${d}" fill="none" stroke="rgba(34,196,119,.45)" stroke-width="2"/>`;
+}
+let _connRAF = 0;
+window.addEventListener('resize', ()=>{ cancelAnimationFrame(_connRAF); _connRAF = requestAnimationFrame(drawProjConnectors); });
 
 // ---- TABS ----
 document.querySelectorAll('.tab').forEach(t=>{
@@ -1196,6 +1290,8 @@ document.querySelectorAll('.tab').forEach(t=>{
     document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById(t.dataset.p).classList.add('active');
+    // сетка могла отрисоваться, пока вкладка была скрыта — дорисуем линии
+    if(t.dataset.p==='bracket') requestAnimationFrame(drawProjConnectors);
   });
 });
 
