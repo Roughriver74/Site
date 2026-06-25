@@ -193,6 +193,13 @@
   .match.live{border-color:rgba(34,196,119,.45);box-shadow:0 0 0 1px rgba(34,196,119,.15)}
   .match.live .state{color:var(--green)}
   .match .lose{color:var(--muted)}
+  /* «кто выходит» — реальный признак прохода в плей-офф */
+  .match .side.adv .nm{color:#bff3d6;font-weight:600}
+  .advtag{font-family:'Oswald';text-transform:uppercase;letter-spacing:.04em;font-size:9px;font-weight:600;
+    color:var(--bg);background:var(--green);border-radius:5px;padding:2px 6px;flex:0 0 auto;line-height:1.4}
+  .advtag.live{animation:pulse 2s infinite}
+  .match.ko .state{color:var(--cyan)}
+  .match.ko.live .state{color:var(--green)}
   .emptybox{color:var(--muted);font-size:14px;text-align:center;padding:30px 10px}
   @media(max-width:560px){
     .match{gap:8px;padding:10px 10px}
@@ -224,6 +231,11 @@
   .slot.win{background:linear-gradient(90deg,rgba(34,196,119,.16),transparent);font-weight:600}
   .slot.win .nm{color:#bff3d6}
   .slot.lose{color:var(--muted);opacity:.6}
+  .slot.lead{background:linear-gradient(90deg,rgba(34,196,119,.10),transparent)}
+  .slot.lead .nm{color:#bff3d6;font-weight:600}
+  .tie.live{border-color:rgba(34,196,119,.45);box-shadow:0 0 0 1px rgba(34,196,119,.15)}
+  .livetag{font-family:'Oswald';letter-spacing:.06em;font-size:9px;font-weight:700;color:var(--bg);
+    background:var(--green);border-radius:5px;padding:1px 6px;margin-left:7px;animation:pulse 2s infinite}
   .final-tie{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,201,75,.3),0 8px 30px rgba(255,201,75,.12)}
   .champ{grid-column:1/-1;margin-top:6px;text-align:center;background:rgba(255,201,75,.06);
     border:1px solid rgba(255,201,75,.25);border-radius:12px;padding:14px}
@@ -377,7 +389,11 @@
       <button class="chip active" data-f="all">Все</button>
       <button class="chip" data-f="live">Идут</button>
       <button class="chip" data-f="today">Сегодня</button>
+      <button class="chip" data-f="ko">Плей-офф</button>
       <button class="chip ghost" id="toNearest">↓ к ближайшим</button>
+    </div>
+    <div class="legend" style="margin-bottom:14px">
+      <span class="lg-q"><i></i>в матчах плей-офф значок <b style="color:var(--green)">проходит / прошёл</b> показывает, кто выходит дальше — в реальном времени</span>
     </div>
     <div class="matchlist" id="matchList"></div>
   </section>
@@ -672,12 +688,14 @@ function setBar2(state, html){
 const evState = e => (e.status && e.status.type && e.status.type.state) || 'pre';
 const isToday = iso => { const d=new Date(iso), n=new Date();
   return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate(); };
-function teamCell(team, away, lose){
+function teamCell(team, away, lose, adv){
   team = team || {};
   const key  = matchKey(team);
   const flag = key ? fl[key] : '';
   const name = key ? nm[key] : localizeSlot((team.displayName||team.shortDisplayName||'').trim());
-  return `<div class="side ${away?'away':'home'} ${lose?'lose':''}"><span class="fl">${flag}</span><span class="nm">${name}</span></div>`;
+  // adv: {txt, live} — кто проходит дальше в плей-офф
+  const badge = adv ? `<span class="advtag ${adv.live?'live':''}">${adv.txt}</span>` : '';
+  return `<div class="side ${away?'away':'home'} ${lose?'lose':''} ${adv?'adv':''}"><span class="fl">${flag}</span><span class="nm">${name}</span>${badge}</div>`;
 }
 
 // ---- РАСПИСАНИЕ (вкладка «Матчи») ----
@@ -685,6 +703,7 @@ function renderSchedule(){
   let evs = allEvents.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
   if(scheduleFilter==='live')  evs = evs.filter(e=> evState(e)==='in');
   if(scheduleFilter==='today') evs = evs.filter(e=> isToday(e.date));
+  if(scheduleFilter==='ko')    evs = evs.filter(e=> roundOf(e));
   if(!evs.length){ matchList.innerHTML = `<div class="emptybox">Матчей нет.</div>`; return; }
 
   const now = Date.now();
@@ -703,16 +722,32 @@ function renderSchedule(){
     let stateTxt='', scoreHtml=`<div class="score time">${hhmm}</div>`;
     if(state==='in'){ stateTxt = st.shortDetail || 'LIVE'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
     else if(state==='post'){ stateTxt = 'Заверш.'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
-    let hLose=false, aLose=false;
-    if(state==='post'){ const h=+home.score, a=+away.score; if(h<a) hLose=true; else if(a<h) aLose=true; }
+    // плей-офф: считаем, кто выходит дальше — в реальном времени
+    const koRound = roundOf(ev);
+    let hLose=false, aLose=false, hAdv=null, aAdv=null;
+    const h=+home.score, a=+away.score;
+    if(state==='post'){
+      if(h<a) hLose=true; else if(a<h) aLose=true;
+      if(koRound){
+        // победитель по флагу ESPN — учитывает серию пенальти при равном счёте
+        const tie = h===a;
+        if(home.winner===true){ aLose=true; hLose=false; hAdv={txt: tie?'по пен.':'прошёл', live:false}; }
+        else if(away.winner===true){ hLose=true; aLose=false; aAdv={txt: tie?'по пен.':'прошёл', live:false}; }
+      }
+    } else if(state==='in' && koRound){
+      // по ходу матча: кто ведёт — тот сейчас проходит; ничья — судьбу решат доп. время/пенальти
+      if(h>a) hAdv={txt:'проходит', live:true};
+      else if(a>h) aAdv={txt:'проходит', live:true};
+      else stateTxt = (stateTxt? stateTxt+' · ':'') + 'ничья';
+    }
     // якорь «ближайший»: первый идущий или первый будущий матч
     let anchor = '';
     if(!nearestSet && (state==='in' || (state==='pre' && dt.getTime()>=now))){ anchor = ' id="nearestMatch"'; nearestSet = true; }
-    html += `<div class="match ${state==='in'?'live':''}"${anchor}>
+    html += `<div class="match ${state==='in'?'live':''} ${koRound?'ko':''}"${anchor}>
       <div class="state">${stateTxt}</div>
-      ${teamCell(home.team, false, hLose)}
+      ${teamCell(home.team, false, hLose, hAdv)}
       ${scoreHtml}
-      ${teamCell(away.team, true, aLose)}
+      ${teamCell(away.team, true, aLose, aAdv)}
     </div>`;
   });
   matchList.innerHTML = html;
@@ -865,13 +900,13 @@ function localizeSlot(raw){
     .replace(/Winners?/ig,'победитель').replace(/Losers?/ig,'проигравший')
     .replace(/Runner-?up/ig,'2-е место').replace(/Group/ig,'группа').replace(/Match/ig,'матч');
 }
-function realSlot(c, completed){
+function realSlot(c, completed, live, opp){
   c = c || {}; const team = c.team || {};
   let key, flag, name;
-  
+
   // Сначала пытаемся сопоставить с реальной командой через matchKey
   key = matchKey(team);
-  
+
   // Если не вышло — пытаемся разрешить placeholder через живые таблицы групп
   if(!key){
     const resolved = resolvePlaceholder(team);
@@ -879,27 +914,37 @@ function realSlot(c, completed){
       key = resolved.key; flag = resolved.flag; name = resolved.name;
     }
   }
-  
+
   // Если и placeholder не разрешился — показываем локализованный placeholder
   if(!key){
     flag = ''; name = localizeSlot((team.displayName || team.shortDisplayName || '').trim());
   } else if(flag === undefined) {
     flag = fl[key]; name = nm[key];
   }
-  
+
   const win  = completed && c.winner===true;
   const lose = completed && c.winner===false;
-  const sc   = (completed && c.score!=null) ? `<span class="sc">${c.score}</span>` : '';
-  return `<div class="slot ${win?'win':(lose?'lose':'')}"><span class="fl">${flag||''}</span><span class="nm">${name}</span>${sc}</div>`;
+  // по ходу матча: кто ведёт — тот сейчас выходит дальше
+  let lead = false;
+  if(live && !completed){
+    const s = +c.score, o = +((opp&&opp.score));
+    if(!isNaN(s) && !isNaN(o) && s>o) lead = true;
+  }
+  const showScore = (completed || live) && c.score!=null && c.score!=='';
+  const sc   = showScore ? `<span class="sc">${c.score}</span>` : '';
+  return `<div class="slot ${win?'win':(lose?'lose':'')} ${lead?'lead':''}"><span class="fl">${flag||''}</span><span class="nm">${name}</span>${sc}</div>`;
 }
 function realTie(ev, isFinal, label){
   const comp = (ev.competitions && ev.competitions[0]) || {};
   const cs   = comp.competitors || [];
   const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
   const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
-  const completed = !!(ev.status && ev.status.type && ev.status.type.completed);
+  const st   = (ev.status && ev.status.type) || {};
+  const completed = !!st.completed;
+  const live = st.state==='in';
   const dstr = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  return `<div class="tie ${isFinal?'final-tie':''}"><div class="tie-date">${label} · ${dstr}</div>${realSlot(home,completed)}${realSlot(away,completed)}</div>`;
+  const liveTag = live ? `<span class="livetag">${st.shortDetail||'LIVE'}</span>` : '';
+  return `<div class="tie ${isFinal?'final-tie':''} ${live?'live':''}"><div class="tie-date">${label} · ${dstr}${liveTag}</div>${realSlot(home,completed,live,away)}${realSlot(away,completed,live,home)}</div>`;
 }
 function championOf(finEvents){
   const ev = (finEvents||[]).find(e=> e.status && e.status.type && e.status.type.completed);
