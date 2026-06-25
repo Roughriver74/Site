@@ -236,6 +236,13 @@
   .tie.live{border-color:rgba(34,196,119,.45);box-shadow:0 0 0 1px rgba(34,196,119,.15)}
   .livetag{font-family:'Oswald';letter-spacing:.06em;font-size:9px;font-weight:700;color:var(--bg);
     background:var(--green);border-radius:5px;padding:1px 6px;margin-left:7px;animation:pulse 2s infinite}
+  /* код позиции команды (1A / 2B / 3C) — как у BBC «as it stands» */
+  .poscode{font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--cyan);
+    background:var(--surface2);border:1px solid var(--line);border-radius:5px;padding:1px 4px;
+    flex:0 0 auto;min-width:23px;text-align:center;letter-spacing:.02em}
+  .poscode.proj{color:var(--muted);border-style:dashed}
+  .slot.tbd .nm{color:var(--muted)}
+  @media(max-width:380px){.poscode{font-size:9px;min-width:20px;padding:1px 3px}}
   .final-tie{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,201,75,.3),0 8px 30px rgba(255,201,75,.12)}
   .champ{grid-column:1/-1;margin-top:6px;text-align:center;background:rgba(255,201,75,.06);
     border:1px solid rgba(255,201,75,.25);border-radius:12px;padding:14px}
@@ -657,6 +664,7 @@ async function refresh(){
     const matched = applyLive(json);
     renderGroups();
     renderQualifiers(); // список вышедших пересчитываем по свежим таблицам
+    renderBracket();    // сетка «как есть» пересобирается из обновлённых таблиц групп
     const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     if(matched>0) setBar('live', `<b>В реальном времени</b> · ESPN · обновлено ${time}`);
     else setBar('err', `ESPN ещё не отдаёт таблицы турнира — показан <b>снимок</b>`);
@@ -797,31 +805,32 @@ function groupStarted(g){
 }
 
 function resolveGroupPosition(group, pos){
-  if(!groupStarted(group)) return null;  // группа не играла — оставляем placeholder
+  // «как есть»: всегда берём команду из текущего положения группы (живого либо
+  // из снимка-посева). Раньше пустые группы оставались placeholder — теперь нет.
   const d = groups[group];
+  if(!d) return null;
   const row = d.rows[pos - 1];
   if(!row) return null;
   const key = row[0];
-  return { key, flag: fl[key] || '', name: nm[key] || key };
+  return { key, flag: fl[key] || '', name: nm[key] || key, code: pos+group, live: groupStarted(group) };
 }
 
 function resolveThirdPlace(groupLetters){
   // Среди указанных групп ищем лучшую 3-ю команду, ещё не назначенную в другой слот
   const cands = [];
   for(const g of groupLetters){
-    if(!groupStarted(g)) continue;
     const d = groups[g];
+    if(!d || !d.rows[2]) continue;
     const row = d.rows[2];
-    if(!row) continue;
     const key = row[0];
     if(assignedThirds.has(key)) continue;
-    cands.push({ key, g, pts:+row[1]||0, gd:parseInt(row[2])||0 });
+    cands.push({ key, g, pts:+row[1]||0, gd:parseInt(row[2])||0, live:groupStarted(g) });
   }
   if(!cands.length) return null;
   cands.sort((a,b)=> b.pts-a.pts || b.gd-a.gd);
   const best = cands[0];
   assignedThirds.add(best.key);
-  return { key: best.key, flag: fl[best.key]||'', name: nm[best.key]||best.key };
+  return { key: best.key, flag: fl[best.key]||'', name: nm[best.key]||best.key, code:'3'+best.g, live:best.live };
 }
 
 // Пытается разобрать placeholder-имя ESPN и вернуть реальную команду.
@@ -902,7 +911,7 @@ function localizeSlot(raw){
 }
 function realSlot(c, completed, live, opp){
   c = c || {}; const team = c.team || {};
-  let key, flag, name;
+  let key, flag, name, code='', proj=false;
 
   // Сначала пытаемся сопоставить с реальной командой через matchKey
   key = matchKey(team);
@@ -912,6 +921,8 @@ function realSlot(c, completed, live, opp){
     const resolved = resolvePlaceholder(team);
     if(resolved){
       key = resolved.key; flag = resolved.flag; name = resolved.name;
+      code = resolved.code || '';
+      proj = resolved.live===false;   // команда подставлена из посева — это прогноз
     }
   }
 
@@ -932,7 +943,8 @@ function realSlot(c, completed, live, opp){
   }
   const showScore = (completed || live) && c.score!=null && c.score!=='';
   const sc   = showScore ? `<span class="sc">${c.score}</span>` : '';
-  return `<div class="slot ${win?'win':(lose?'lose':'')} ${lead?'lead':''}"><span class="fl">${flag||''}</span><span class="nm">${name}</span>${sc}</div>`;
+  const cc   = code ? `<span class="poscode ${proj?'proj':''}">${code}</span>` : '';
+  return `<div class="slot ${win?'win':(lose?'lose':'')} ${lead?'lead':''}">${cc}<span class="fl">${flag||''}</span><span class="nm">${name}</span>${sc}</div>`;
 }
 function realTie(ev, isFinal, label){
   const comp = (ev.competitions && ev.competitions[0]) || {};
@@ -1023,10 +1035,10 @@ function renderBracket(){
   const noteEl = document.getElementById('bracketNote');
   if(haveKO){
     document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
-    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. Команды из групп, где игры уже идут, <b>подставляются автоматически</b> из текущих таблиц. Команды из групп, которые ещё не стартовали, показаны как «Победитель группы X» / «2-е место» / «3-е место» — они появятся, когда группы доиграют. <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3).';
+    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. Каждый слот подписан кодом позиции (<b>1A</b> — победитель группы A, <b>2B</b> — 2-е место, <b>3C</b> — 3-е). Команды <b>подставляются «как есть»</b> из текущих таблиц — пунктирный код означает, что группа ещё доигрывается. <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3).';
   }else{
     renderProjection();
-    noteEl.innerHTML = 'Матчи плей-офф ещё не в расписании ESPN. Даты раундов — официальный календарь ЧМ-2026 (1/16 с 28 июня, финал 19 июля). Пары и проходы ниже — <b>прогноз</b>; реальная сетка с датой и временем появится автоматически.';
+    noteEl.innerHTML = 'Сетка собрана <b>«как есть»</b> из текущего положения в группах в реальном времени: <b>1A</b> — кто сейчас первый в группе A, <b>2B</b> — второй, <b>3C</b> — лучший третий. Победитель каждой пары спрогнозирован по силе сборных, пока матч не сыгран (пунктирный код — группа ещё не доиграна). Реальная сетка с датой и временем подхватится автоматически, как только ESPN поставит матчи в расписание.';
   }
 }
 
@@ -1068,40 +1080,6 @@ document.querySelectorAll('#matchFilter .chip[data-f]').forEach(c=>{
 });
 document.getElementById('toNearest').addEventListener('click', scrollToNearest);
 
-// ---- BRACKET DATA (прогноз, fallback до жеребьёвки) ----
-const R32 = [
- [["Argentina",1],["Czechia",0]],[["Switzerland",0],["Senegal",1]],
- [["Spain",1],["Norway",0]],[["Uruguay",1],["IvoryCoast",0]],
- [["England",1],["Ecuador",0]],[["Mexico",1],["Iran",0]],
- [["Brazil",1],["Ghana",0]],[["Portugal",1],["Colombia",0]],
- [["France",1],["Algeria",0]],[["Germany",1],["Morocco",0]],
- [["Netherlands",1],["Egypt",0]],[["Belgium",1],["Croatia",0]],
- [["USA",1],["Uzbekistan",0]],[["Japan",1],["Austria",0]],
- [["Scotland",0],["Canada",1]],[["Korea",0],["Turkiye",1]]
-];
-const R16 = [
- [["Argentina",1],["Senegal",0]],[["Spain",1],["Uruguay",0]],
- [["England",1],["Mexico",0]],[["Brazil",1],["Portugal",0]],
- [["France",1],["Germany",0]],[["Netherlands",1],["Belgium",0]],
- [["USA",1],["Japan",0]],[["Canada",0],["Turkiye",1]]
-];
-const QF = [
- [["Argentina",0],["Spain",1]],[["England",0],["Brazil",1]],
- [["France",1],["Netherlands",0]],[["USA",1],["Turkiye",0]]
-];
-const SF = [
- [["Spain",1],["Brazil",0]],[["France",1],["USA",0]]
-];
-const FIN = [[["Spain",1],["France",0]]];
-
-function tie(pair,isFinal){
-  const cls = isFinal? 'tie final-tie':'tie';
-  const s = pair.map(p=>{
-    const w = p[1]===1;
-    return `<div class="slot ${w?'win':(p[1]===0?'lose':'')}"><span class="fl">${fl[p[0]]}</span><span class="nm">${nm[p[0]]}</span></div>`;
-  }).join('');
-  return `<div class="${cls}">${s}</div>`;
-}
 // официальный календарь плей-офф ЧМ-2026 (fallback, если ESPN не отдаёт даты)
 const KO_DATES = { R32:'28 июн – 3 июл', R16:'4 – 7 июл', QF:'9 – 11 июл', SF:'14 – 15 июл', '3RD':'18 июля', FIN:'19 июля' };
 function fmtDay(d){ return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}); }
@@ -1117,18 +1095,98 @@ function koWindows(){
   });
   return out;
 }
-function round(title,matches,isFinal,sub){
+
+// ============================================================
+//  ПРОЕКЦИЯ СЕТКИ «КАК ЕСТЬ» — заполняется из текущих таблиц групп
+//  в реальном времени (победители, вторые места, лучшие третьи),
+//  победитель каждой пары прогнозируется по силе сборной, пока матч
+//  не сыгран. Как только ESPN отдаст реальную сетку — берётся она.
+// ============================================================
+// Сила команд (1 = сильнее всех) — нужна только для прогноза победителя пары.
+const STRENGTH = {
+  Spain:1,France:2,Argentina:3,Brazil:4,England:5,Portugal:6,Germany:7,Netherlands:8,
+  Belgium:9,USA:10,Croatia:11,Uruguay:12,Colombia:13,Morocco:14,Mexico:15,Japan:16,
+  Senegal:17,Switzerland:18,IvoryCoast:19,Ecuador:20,Austria:21,Korea:22,Norway:23,
+  Australia:24,Egypt:25,Turkiye:26,Iran:27,Sweden:28,Scotland:29,Panama:30,Canada:31,
+  Algeria:32,Tunisia:33,Qatar:34,Saudi:35,Jordan:36,Bosnia:37,Uzbekistan:38,DRCongo:39,
+  Ghana:40,Paraguay:41,CapeVerde:42,Iraq:43,Czechia:44,Curacao:45,NewZealand:46,Haiti:47,SouthAfrica:48
+};
+const strOf = k => STRENGTH[k] || 50;
+
+// Фиксированная структура 1/16: какие позиции групп встречаются в каждой паре.
+// W = победитель группы, R = 2-е место, T = лучшее 3-е (индекс 0..7 по рейтингу).
+// Соседние пары (1-2, 3-4, …) сходятся в 1/8 — так строится всё дерево.
+const R32_SLOTS = [
+  [{t:'W',g:'A'},{t:'T',i:0}], [{t:'R',g:'E'},{t:'R',g:'L'}],
+  [{t:'W',g:'B'},{t:'T',i:1}], [{t:'W',g:'I'},{t:'R',g:'A'}],
+  [{t:'W',g:'C'},{t:'T',i:2}], [{t:'R',g:'F'},{t:'R',g:'K'}],
+  [{t:'W',g:'D'},{t:'T',i:3}], [{t:'W',g:'J'},{t:'R',g:'B'}],
+  [{t:'W',g:'E'},{t:'T',i:4}], [{t:'R',g:'G'},{t:'R',g:'J'}],
+  [{t:'W',g:'F'},{t:'T',i:5}], [{t:'W',g:'K'},{t:'R',g:'C'}],
+  [{t:'W',g:'G'},{t:'T',i:6}], [{t:'R',g:'H'},{t:'R',g:'I'}],
+  [{t:'W',g:'H'},{t:'T',i:7}], [{t:'W',g:'L'},{t:'R',g:'D'}]
+];
+
+function projResolve(spec, q){
+  let t, code;
+  if(spec.t==='W'){ t=q.winners.find(x=>x.g===spec.g); code='1'+spec.g; }
+  else if(spec.t==='R'){ t=q.runners.find(x=>x.g===spec.g); code='2'+spec.g; }
+  else { t=q.best8[spec.i]; code = t ? '3'+t.g : '3?'; }
+  if(!t || !t.key) return { key:null, code, name:'—', flag:'', started:false };
+  return { key:t.key, code, name:nm[t.key]||t.key, flag:fl[t.key]||'', started:!!t.started };
+}
+function projWinner(a,b){
+  if(!a||!a.key) return b; if(!b||!b.key) return a;
+  return strOf(a.key)<=strOf(b.key) ? a : b;
+}
+function projLoser(a,b){ return projWinner(a,b)===a ? b : a; }
+function projSlot(team, isWin){
+  const cc = team.code ? `<span class="poscode ${team.started?'':'proj'}">${team.code}</span>` : '';
+  return `<div class="slot ${isWin?'win':''} ${team.key?'':'tbd'}">${cc}` +
+         `<span class="fl">${team.flag}</span><span class="nm">${team.name}</span></div>`;
+}
+function projTie(a,b,isFinal,label){
+  const w = projWinner(a,b);
+  const lab = label ? `<div class="tie-date">${label}</div>` : '';
+  return `<div class="tie ${isFinal?'final-tie':''}">${lab}${projSlot(a, w===a)}${projSlot(b, w===b)}</div>`;
+}
+function projRound(title, ties, sub){
   const s = sub ? `<div class="round-date">${sub}</div>` : '';
-  return `<div class="round"><div class="round-title">${title}</div>${s}${matches.map(m=>tie(m,isFinal)).join('')}</div>`;
+  return `<div class="round"><div class="round-title">${title}</div>${s}${ties}</div>`;
+}
+// прогон победителей по дереву: на вход массив пар, на выход массив победителей
+function nextRound(winnersArr){
+  const pairs = [];
+  for(let i=0;i<winnersArr.length;i+=2) pairs.push([winnersArr[i], winnersArr[i+1]]);
+  return pairs;
 }
 function renderProjection(){
+  const q = computeQualifiers();
   const D = koWindows();
+  // 1/16 — заполняем слоты из текущего положения групп
+  const r32   = R32_SLOTS.map(([sa,sb])=> [projResolve(sa,q), projResolve(sb,q)]);
+  const w32   = r32.map(([a,b])=> projWinner(a,b));
+  // 1/8, 1/4, 1/2 — победители соседних пар
+  const r16   = nextRound(w32);   const w16 = r16.map(([a,b])=> projWinner(a,b));
+  const qf    = nextRound(w16);   const wqf = qf.map(([a,b])=> projWinner(a,b));
+  const sf    = nextRound(wqf);   const wsf = sf.map(([a,b])=> projWinner(a,b));
+  const sfLose= sf.map(([a,b])=> projLoser(a,b));
+  // финал + матч за 3-е место + чемпион
+  const champ = projWinner(wsf[0], wsf[1]);
+
+  const html32 = r32.map(([a,b])=> projTie(a,b,false,'')).join('');
+  const html16 = r16.map(([a,b])=> projTie(a,b,false,'')).join('');
+  const htmlQF = qf.map(([a,b])=> projTie(a,b,false,'')).join('');
+  const htmlSF = sf.map(([a,b])=> projTie(a,b,false,'')).join('');
+  const champBlock = `<div class="champ"><div class="cap">Чемпион · как есть</div>` +
+    `<div class="who"><span class="fl">${champ.flag}</span> ${champ.name}</div></div>`;
+  const htmlFIN = projTie(wsf[0], wsf[1], true, '') +
+    `<div class="round-sub">Матч за 3-е место</div>` + projTie(sfLose[0], sfLose[1], false, '') + champBlock;
+
   document.getElementById('bracketEl').innerHTML =
-    round('1/16 финала',R32,false,D.R32) + round('1/8 финала',R16,false,D.R16) +
-    round('1/4 финала',QF,false,D.QF) + round('1/2 финала',SF,false,D.SF) +
-    `<div class="round"><div class="round-title">Финал</div><div class="round-date">${D.FIN}</div>${tie(FIN[0],true)}
-       <div class="champ"><div class="cap">Чемпион (прогноз)</div>
-       <div class="who"><span class="fl">🇪🇸</span> Испания</div></div></div>`;
+    projRound('1/16 финала', html32, D.R32) + projRound('1/8 финала', html16, D.R16) +
+    projRound('1/4 финала', htmlQF, D.QF) + projRound('1/2 финала', htmlSF, D.SF) +
+    projRound('Финал', htmlFIN, D.FIN);
 }
 
 // ---- TABS ----
