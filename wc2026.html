@@ -130,13 +130,18 @@
   .ghead .gl{font-family:'Oswald';font-weight:700;font-size:22px;text-transform:uppercase}
   .ghead .gl small{color:var(--cyan);font-size:13px;letter-spacing:.1em;margin-left:6px}
   .ghead .status{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;text-align:right}
-  table{width:100%;border-collapse:collapse;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
   th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
-    font-weight:600;text-align:right;padding:4px 16px;border-bottom:1px solid var(--line)}
-  th.name{text-align:left}
-  td{padding:10px 16px;border-bottom:1px solid rgba(38,47,80,.5);text-align:right}
+    font-weight:600;text-align:right;padding:4px 10px;border-bottom:1px solid var(--line)}
+  th.name{text-align:left;padding-left:14px}
+  /* фиксированная ширина числовых колонок — таблица всегда влезает в карточку,
+     имя получает остаток и помещается целиком */
+  th:nth-child(2),td.pts{width:38px}
+  th:nth-child(3),td.gd{width:46px}
+  td{padding:10px 10px;border-bottom:1px solid rgba(38,47,80,.5);text-align:right}
   tr:last-child td{border-bottom:none}
-  td.name{text-align:left;display:flex;align-items:center;gap:9px;font-weight:500}
+  td.name{text-align:left;display:flex;align-items:center;gap:8px;font-weight:500;min-width:0;padding-left:14px}
+  td.name .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere}
   td.name .fl{font-size:18px;line-height:1}
   td.pts{font-family:'JetBrains Mono';font-weight:700;color:var(--txt)}
   td.gd{font-family:'JetBrains Mono';color:var(--muted)}
@@ -617,7 +622,7 @@ function renderGroups(){
   for(const [g,data] of Object.entries(groups)){
     const rows = data.rows.map(r=>`
       <tr class="${r[3]}">
-        <td class="name"><span class="fl">${fl[r[0]]}</span>${nm[r[0]]}</td>
+        <td class="name"><span class="fl">${fl[r[0]]}</span><span class="nm">${nm[r[0]]||r[0]}</span></td>
         <td class="pts">${r[1]}</td>
         <td class="gd">${r[2]}</td>
       </tr>`).join('');
@@ -1478,6 +1483,19 @@ const WMO = {0:['☀️','ясно'],1:['🌤️','малооблачно'],2:['
   77:['🌨️','снег'],80:['🌦️','ливень'],81:['🌧️','ливень'],82:['⛈️','сильный ливень'],
   85:['🌨️','снег'],86:['❄️','снег'],95:['⛈️','гроза'],96:['⛈️','гроза'],99:['⛈️','гроза']};
 const wmo = code => WMO[code] || ['🌡️',''];
+// Координаты 16 городов-хозяев ЧМ-2026 — чтобы погода работала надёжно,
+// не завися от геокодинга (ESPN иногда отдаёт нестандартное название города).
+const VENUE_COORDS = {
+  'atlanta':[33.755,-84.401], 'foxborough':[42.091,-71.264], 'boston':[42.091,-71.264],
+  'arlington':[32.748,-97.093], 'dallas':[32.748,-97.093], 'guadalajara':[20.681,-103.463],
+  'zapopan':[20.681,-103.463], 'houston':[29.685,-95.411], 'kansas city':[39.049,-94.484],
+  'inglewood':[33.953,-118.339], 'los angeles':[33.953,-118.339], 'mexico city':[19.303,-99.150],
+  'ciudad de méxico':[19.303,-99.150], 'miami gardens':[25.958,-80.239], 'miami':[25.958,-80.239],
+  'monterrey':[25.669,-100.244], 'guadalupe':[25.669,-100.244], 'east rutherford':[40.814,-74.074],
+  'new york':[40.814,-74.074], 'philadelphia':[39.901,-75.168], 'santa clara':[37.403,-121.970],
+  'san francisco':[37.403,-121.970], 'seattle':[47.595,-122.331], 'toronto':[43.633,-79.418],
+  'vancouver':[49.277,-123.112]
+};
 function venueCity(ev){
   const v = (ev.competitions&&ev.competitions[0]&&ev.competitions[0].venue)||{};
   const a = v.address||{};
@@ -1498,7 +1516,9 @@ async function fetchWx(city, iso){
   const ckey = city+'|'+iso.slice(0,13);
   if(ckey in wxCache) return wxCache[ckey];
   wxCache[ckey] = null;
-  const g = await geocode(city);
+  // сперва — встроенные координаты города-хозяина, иначе геокодинг
+  const cl = city.toLowerCase();
+  let g = VENUE_COORDS[cl] ? {lat:VENUE_COORDS[cl][0], lon:VENUE_COORDS[cl][1]} : await geocode(city);
   if(!g) return wxCache[ckey];
   try{
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}` +
@@ -1512,13 +1532,13 @@ async function fetchWx(city, iso){
   }catch(e){ wxCache[ckey] = null; }
   return wxCache[ckey];
 }
-// дозагружаем погоду для уже отрисованных будущих матчей (порциями, без спама)
+// дозагружаем погоду для всех отрисованных будущих матчей (запросы кэшируются)
 function hydrateWeather(){
   if(wxBusy) return;
   const slots = [...document.querySelectorAll('#matchList .wx[data-city]')].filter(el=> !el.dataset.done);
   if(!slots.length) return;
   wxBusy = true;
-  Promise.all(slots.slice(0,16).map(async el=>{
+  Promise.all(slots.map(async el=>{
     el.dataset.done = '1';
     const w = await fetchWx(el.dataset.city, el.dataset.iso);
     if(w){ const [ic,desc] = wmo(w.code); el.innerHTML = `<span class="ic">${ic}</span>${w.temp}°`; el.title = desc; }
