@@ -270,6 +270,34 @@
   .thirdwrap .htie{max-width:260px}
   @media(max-width:380px){.htie-date{font-size:9px}}
 
+  /* Статистика */
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:8px}
+  .statcard{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
+    border-radius:14px;padding:14px 16px}
+  .statcard .v{font-family:'Oswald';font-size:30px;font-weight:700;line-height:1}
+  .statcard .v small{font-size:14px;color:var(--muted);font-weight:600}
+  .statcard .l{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.05em}
+  .statcard .d{font-size:13px;color:var(--txt);margin-top:4px}
+  .stathead{font-family:'Oswald';text-transform:uppercase;letter-spacing:.06em;font-size:15px;color:var(--cyan);
+    font-weight:600;margin:20px 2px 10px}
+  .statcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .statrow{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:9px 12px;margin-bottom:7px;font-size:14px}
+  .statrow .rk{font-family:'JetBrains Mono';font-size:12px;color:var(--muted);width:18px;flex:0 0 auto;text-align:center}
+  .statrow .fl{font-size:18px;flex:0 0 auto}
+  .statrow .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .statrow .val{font-family:'JetBrains Mono';font-weight:700;flex:0 0 auto;color:var(--txt)}
+  .statrow .sub{font-size:11px;color:var(--muted);flex:0 0 auto;margin-left:2px}
+  @media(max-width:640px){.statcols{grid-template-columns:1fr}}
+
+  /* Погода в матчах */
+  .wx{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono';font-size:11px;
+    color:var(--muted);background:var(--surface2);border:1px solid var(--line);border-radius:7px;
+    padding:2px 6px;white-space:nowrap;flex:0 0 auto}
+  .wx .ic{font-size:13px;line-height:1}
+  .match .meta{display:flex;flex-direction:column;align-items:center;gap:3px;flex:0 0 auto}
+  @media(max-width:380px){.wx{font-size:10px;padding:1px 4px}}
+
   /* Forecast panel cards */
   .fcast{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
   .fc{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);
@@ -387,6 +415,7 @@
     <button class="tab" data-p="matches">Матчи</button>
     <button class="tab" data-p="qualify">Выходят</button>
     <button class="tab" data-p="bracket">Плей-офф</button>
+    <button class="tab" data-p="stats">Статистика</button>
     <button class="tab" data-p="forecast">Кто победит</button>
   </div>
 
@@ -437,6 +466,16 @@
       <div class="bracket" id="bracketEl"></div>
     </div>
     <div class="note" id="bracketNote" style="margin-top:16px"></div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section class="panel" id="stats">
+    <div class="livebar" id="livebar3">
+      <span class="dot"></span>
+      <span class="txt" id="liveText3">Загрузка статистики…</span>
+      <button class="refresh" id="refreshBtn3">Обновить</button>
+    </div>
+    <div id="statsBox"></div>
   </section>
 
   <!-- ===== FORECAST ===== -->
@@ -813,7 +852,12 @@ function renderSchedule(){
     const state = evState(ev);
     const st    = (ev.status && ev.status.type) || {};
     const hhmm  = dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
-    let stateTxt='', scoreHtml=`<div class="score time">${hhmm}</div>`;
+    // погода: для будущих матчей в пределах прогноза (~16 дней) — чип «как есть»
+    const city = venueCity(ev);
+    const within16 = (dt.getTime()-now) < 16*864e5;
+    const wxChip = (state==='pre' && dt.getTime()>=now && within16 && city)
+      ? `<div class="wx" data-city="${city.replace(/"/g,'')}" data-iso="${ev.date}" title="${city}">…</div>` : '';
+    let stateTxt='', scoreHtml=`<div class="meta"><div class="score time">${hhmm}</div>${wxChip}</div>`;
     if(state==='in'){ stateTxt = st.shortDetail || 'LIVE'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
     else if(state==='post'){ stateTxt = 'Заверш.'; scoreHtml = `<div class="score">${home.score} : ${away.score}</div>`; }
     // плей-офф: считаем, кто выходит дальше — в реальном времени
@@ -845,6 +889,7 @@ function renderSchedule(){
     </div>`;
   });
   matchList.innerHTML = html;
+  hydrateWeather();   // подтягиваем погоду для будущих матчей
 }
 function scrollToNearest(){
   const el = document.getElementById('nearestMatch');
@@ -1149,6 +1194,7 @@ async function refreshEvents(){
     allEvents = json.events || [];
     renderSchedule();
     renderBracket();
+    renderStats();
     const time  = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     const liveN = allEvents.filter(e=> evState(e)==='in').length;
     if(!allEvents.length) setBar2('err', 'Расписание недоступно — показан прогноз сетки');
@@ -1319,6 +1365,167 @@ function drawProjConnectors(){
 let _connRAF = 0;
 window.addEventListener('resize', ()=>{ cancelAnimationFrame(_connRAF); _connRAF = requestAnimationFrame(drawProjConnectors); });
 
+// ============================================================
+//  СТАТИСТИКА И АНАЛИТИКА — считается из тех же live-данных ESPN
+//  (scoreboard), поэтому обновляется в реальном времени.
+// ============================================================
+const WC_TOTAL_MATCHES = 104;
+const livebar3  = document.getElementById('livebar3');
+const liveText3 = document.getElementById('liveText3');
+const refreshBtn3 = document.getElementById('refreshBtn3');
+if(refreshBtn3) refreshBtn3.addEventListener('click', refreshEvents);
+
+function compName(c){ const k = matchKey((c&&c.team)||{}); return { k, flag:k?fl[k]:'', name:k?nm[k]:(((c&&c.team)||{}).displayName||'—') }; }
+
+function computeStats(){
+  const t = {}; const ensure = k => t[k] || (t[k]={key:k,gf:0,ga:0,w:0,d:0,l:0,pl:0,cs:0});
+  let played=0, goals=0, draws=0, scoreless=0, live=0;
+  let biggest=null, highest=null;
+  const scorers = {};
+  allEvents.forEach(ev=>{
+    const st = (ev.status&&ev.status.type)||{}; const state = st.state||'pre';
+    if(state==='in') live++;
+    const comp = (ev.competitions&&ev.competitions[0])||{};
+    const cs = comp.competitors||[];
+    const home = cs.find(c=>c.homeAway==='home')||cs[0]||{};
+    const away = cs.find(c=>c.homeAway==='away')||cs[1]||{};
+    // авторы голов (по возможности) — из ленты голов ESPN
+    (comp.details||[]).forEach(d=>{
+      if(!d || d.scoringPlay!==true) return;
+      const tp = ((d.type&&d.type.text)||'').toLowerCase();
+      if(tp.includes('shootout')) return;            // серия пенальти — не считаем как гол
+      const a = (d.athletesInvolved&&d.athletesInvolved[0]) || null;
+      const pn = a && (a.displayName||a.shortName); if(!pn) return;
+      const rec = scorers[pn] || (scorers[pn]={name:pn, goals:0, teamKey:matchKey(d.team||{})});
+      if(!tp.includes('own')) rec.goals++;
+    });
+    if(state==='pre') return;
+    const hs=+home.score, as=+away.score;
+    if(!st.completed || isNaN(hs) || isNaN(as)) return;
+    played++; goals += hs+as;
+    if(hs===as) draws++;
+    if(hs+as===0) scoreless++;
+    const tot=hs+as, diff=Math.abs(hs-as);
+    if(!highest || tot>highest.tot) highest={tot,hs,as,home,away};
+    if(!biggest || diff>biggest.diff) biggest={diff,hs,as,home,away};
+    const hk=matchKey(home.team), ak=matchKey(away.team);
+    if(hk){const x=ensure(hk); x.pl++; x.gf+=hs; x.ga+=as; if(as===0)x.cs++; if(hs>as)x.w++; else if(hs<as)x.l++; else x.d++;}
+    if(ak){const x=ensure(ak); x.pl++; x.gf+=as; x.ga+=hs; if(hs===0)x.cs++; if(as>hs)x.w++; else if(as<hs)x.l++; else x.d++;}
+  });
+  return { teams:Object.values(t), played, goals, draws, scoreless, live, biggest, highest,
+           scorers:Object.values(scorers).filter(s=>s.goals>0).sort((a,b)=> b.goals-a.goals) };
+}
+function statRow(rk, flag, name, val, sub){
+  return `<div class="statrow"><span class="rk">${rk}</span><span class="fl">${flag||''}</span>` +
+         `<span class="nm">${name}</span><span class="val">${val}</span>${sub?`<span class="sub">${sub}</span>`:''}</div>`;
+}
+function matchLine(m){
+  const h=compName(m.home), a=compName(m.away);
+  return `${h.flag} ${h.name} <b>${m.hs}:${m.as}</b> ${a.name} ${a.flag}`;
+}
+function renderStats(){
+  const s = computeStats();
+  const box = document.getElementById('statsBox');
+  const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  if(liveText3){
+    livebar3.classList.remove('live','err');
+    if(s.played || s.live){ livebar3.classList.add('live');
+      liveText3.innerHTML = `<b>В реальном времени</b> · сыграно ${s.played} из ${WC_TOTAL_MATCHES}${s.live?` · ${s.live} идут`:''} · ${time}`; }
+    else liveText3.innerHTML = 'Статистика появится, как пойдут матчи';
+  }
+  if(!box) return;
+  if(!s.played){ box.innerHTML = `<div class="emptybox">Матчи ещё не сыграны — статистика появится автоматически.</div>`; return; }
+  const avg = (s.goals/s.played).toFixed(2);
+  const scoring = Math.round((1 - s.scoreless/s.played)*100);
+  const cards = [
+    `<div class="statcard"><div class="v">${s.played}<small> / ${WC_TOTAL_MATCHES}</small></div><div class="l">Матчей сыграно</div></div>`,
+    `<div class="statcard"><div class="v">${s.goals}</div><div class="l">Голов всего</div></div>`,
+    `<div class="statcard"><div class="v">${avg}</div><div class="l">В среднем за матч</div></div>`,
+    `<div class="statcard"><div class="v">${scoring}<small>%</small></div><div class="l">Результативных матчей</div></div>`,
+    `<div class="statcard"><div class="v">${s.draws}</div><div class="l">Ничьих</div></div>`
+  ];
+  if(s.biggest) cards.push(`<div class="statcard"><div class="l">Крупнейшая победа</div><div class="d">${matchLine(s.biggest)}</div></div>`);
+  if(s.highest) cards.push(`<div class="statcard"><div class="l">Самый результативный</div><div class="d">${matchLine(s.highest)} <span class="sub">(${s.highest.tot} гол.)</span></div></div>`);
+
+  const attack  = s.teams.slice().sort((a,b)=> b.gf-a.gf || (b.gf-b.ga)-(a.gf-a.ga)).slice(0,6);
+  const defense = s.teams.filter(x=>x.pl>0).sort((a,b)=> a.ga-b.ga || b.cs-a.cs).slice(0,6);
+  const atkHtml = attack.map((x,i)=> statRow(i+1, fl[x.key], nm[x.key]||x.key, x.gf, `${x.pl} м`)).join('');
+  const defHtml = defense.map((x,i)=> statRow(i+1, fl[x.key], nm[x.key]||x.key, x.ga, x.cs?`${x.cs} «сух.»`:'')).join('');
+
+  let scorersHtml = '';
+  if(s.scorers.length){
+    scorersHtml = `<div class="stathead">Бомбардиры</div>` +
+      s.scorers.slice(0,10).map((p,i)=> statRow(i+1, p.teamKey?fl[p.teamKey]:'', p.name, p.goals, p.goals===1?'гол':'голов')).join('');
+  }
+  box.innerHTML =
+    `<div class="statgrid">${cards.join('')}</div>` +
+    `<div class="statcols">` +
+      `<div><div class="stathead">Атака · забито</div>${atkHtml}</div>` +
+      `<div><div class="stathead">Оборона · пропущено</div>${defHtml}</div>` +
+    `</div>` + scorersHtml +
+    `<div class="note" style="margin-top:18px">Считается из счётов матчей ESPN в реальном времени. Бомбардиры — по авторам голов из ленты ESPN (если отдаются). Это открытые данные, не официальная статистика ФИФА.</div>`;
+}
+
+// ============================================================
+//  ПОГОДА на предстоящие матчи — Open-Meteo (без ключа, CORS открыт).
+//  Город матча берём из venue ESPN → геокодим → прогноз на час старта.
+// ============================================================
+const geoCache = {}, wxCache = {}; let wxBusy = false;
+const WMO = {0:['☀️','ясно'],1:['🌤️','малооблачно'],2:['⛅','перем. облачно'],3:['☁️','пасмурно'],
+  45:['🌫️','туман'],48:['🌫️','туман'],51:['🌦️','морось'],53:['🌦️','морось'],55:['🌦️','морось'],
+  56:['🌧️','морось'],57:['🌧️','морось'],61:['🌧️','дождь'],63:['🌧️','дождь'],65:['🌧️','сильный дождь'],
+  66:['🌧️','ледяной дождь'],67:['🌧️','ледяной дождь'],71:['🌨️','снег'],73:['🌨️','снег'],75:['❄️','снег'],
+  77:['🌨️','снег'],80:['🌦️','ливень'],81:['🌧️','ливень'],82:['⛈️','сильный ливень'],
+  85:['🌨️','снег'],86:['❄️','снег'],95:['⛈️','гроза'],96:['⛈️','гроза'],99:['⛈️','гроза']};
+const wmo = code => WMO[code] || ['🌡️',''];
+function venueCity(ev){
+  const v = (ev.competitions&&ev.competitions[0]&&ev.competitions[0].venue)||{};
+  const a = v.address||{};
+  return (a.city || v.shortName || '').trim();
+}
+async function geocode(city){
+  if(city in geoCache) return geoCache[city];
+  geoCache[city] = null;
+  try{
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ru&format=json`);
+    const j = await r.json(); const g = j && j.results && j.results[0];
+    geoCache[city] = g ? {lat:g.latitude, lon:g.longitude} : null;
+  }catch(e){ geoCache[city] = null; }
+  return geoCache[city];
+}
+async function fetchWx(city, iso){
+  const date = iso.slice(0,10);
+  const ckey = city+'|'+iso.slice(0,13);
+  if(ckey in wxCache) return wxCache[ckey];
+  wxCache[ckey] = null;
+  const g = await geocode(city);
+  if(!g) return wxCache[ckey];
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}` +
+                `&hourly=temperature_2m,weather_code&start_date=${date}&end_date=${date}&timezone=auto`;
+    const r = await fetch(url); const j = await r.json();
+    const times = (j.hourly && j.hourly.time) || [];
+    if(!times.length) return wxCache[ckey];
+    const target = new Date(iso).getTime(); let bi=0, bd=Infinity;
+    times.forEach((tt,i)=>{ const dd=Math.abs(new Date(tt).getTime()-target); if(dd<bd){bd=dd;bi=i;} });
+    wxCache[ckey] = { temp: Math.round(j.hourly.temperature_2m[bi]), code: j.hourly.weather_code[bi] };
+  }catch(e){ wxCache[ckey] = null; }
+  return wxCache[ckey];
+}
+// дозагружаем погоду для уже отрисованных будущих матчей (порциями, без спама)
+function hydrateWeather(){
+  if(wxBusy) return;
+  const slots = [...document.querySelectorAll('#matchList .wx[data-city]')].filter(el=> !el.dataset.done);
+  if(!slots.length) return;
+  wxBusy = true;
+  Promise.all(slots.slice(0,16).map(async el=>{
+    el.dataset.done = '1';
+    const w = await fetchWx(el.dataset.city, el.dataset.iso);
+    if(w){ const [ic,desc] = wmo(w.code); el.innerHTML = `<span class="ic">${ic}</span>${w.temp}°`; el.title = desc; }
+    else { el.style.display = 'none'; }
+  })).finally(()=>{ wxBusy = false; });
+}
+
 // ---- TABS ----
 document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click',()=>{
@@ -1328,6 +1535,8 @@ document.querySelectorAll('.tab').forEach(t=>{
     document.getElementById(t.dataset.p).classList.add('active');
     // сетка могла отрисоваться, пока вкладка была скрыта — дорисуем линии
     if(t.dataset.p==='bracket') requestAnimationFrame(drawProjConnectors);
+    if(t.dataset.p==='stats')   renderStats();
+    if(t.dataset.p==='matches') hydrateWeather();
   });
 });
 
@@ -1335,6 +1544,7 @@ document.querySelectorAll('.tab').forEach(t=>{
 renderGroups();
 renderQualifiers();
 renderProjection();
+renderStats();
 refresh();
 refreshEvents();
 if(LIVE.enabled && LIVE.refreshMs>0){
