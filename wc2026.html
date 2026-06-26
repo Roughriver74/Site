@@ -763,16 +763,24 @@ const isToday = iso => { const d=new Date(iso), n=new Date();
   return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate(); };
 function teamCell(team, away, lose, adv){
   team = team || {};
-  const key  = matchKey(team);
-  const flag = key ? fl[key] : '';
-  const name = key ? nm[key] : localizeSlot((team.displayName||team.shortDisplayName||'').trim());
+  let key = matchKey(team), flag='', name='', code='', proj=false;
+  if(key){ flag = fl[key]; name = nm[key]; }
+  else {
+    // плей-офф: вместо «Победитель группы I» / «3-е место (A/B/C/D/F)» подставляем
+    // реальную команду из текущих таблиц групп — «как есть», в реальном времени
+    const r = resolvePlaceholder(team);
+    if(r){ flag = r.flag; name = r.name; code = r.code || ''; proj = r.live===false; }
+    else { name = localizeSlot((team.displayName||team.shortDisplayName||'').trim()); }
+  }
   // adv: {txt, live} — кто проходит дальше в плей-офф
   const badge = adv ? `<span class="advtag ${adv.live?'live':''}">${adv.txt}</span>` : '';
-  return `<div class="side ${away?'away':'home'} ${lose?'lose':''} ${adv?'adv':''}"><span class="fl">${flag}</span><span class="nm">${name}</span>${badge}</div>`;
+  const cc = code ? `<span class="poscode ${proj?'proj':''}">${code}</span>` : '';
+  return `<div class="side ${away?'away':'home'} ${lose?'lose':''} ${adv?'adv':''}"><span class="fl">${flag}</span>${cc}<span class="nm">${name}</span>${badge}</div>`;
 }
 
 // ---- РАСПИСАНИЕ (вкладка «Матчи») ----
 function renderSchedule(){
+  assignedThirds = new Set();   // заново распределяем 3-и места при каждом рендере
   let evs = allEvents.slice().sort((a,b)=> new Date(a.date) - new Date(b.date));
   if(scheduleFilter==='live')  evs = evs.filter(e=> evState(e)==='in');
   if(scheduleFilter==='today') evs = evs.filter(e=> isToday(e.date));
