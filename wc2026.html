@@ -260,9 +260,15 @@
   .htie{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;
     position:relative;z-index:1}
   .htie.final-tie{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,201,75,.3),0 8px 26px rgba(255,201,75,.10)}
+  .htie.live{border-color:rgba(34,196,119,.45);box-shadow:0 0 0 1px rgba(34,196,119,.15)}
+  .htie-date{font-size:10px;color:var(--muted);text-align:center;padding:5px 6px 3px;letter-spacing:.02em;
+    border-bottom:1px solid var(--line);white-space:nowrap}
+  .hempty{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px;border:1px dashed var(--line);
+    border-radius:10px;background:rgba(38,47,80,.18)}
   .connlayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
   .thirdwrap{margin-top:14px}
-  .htie.t3tie{max-width:260px}
+  .thirdwrap .htie{max-width:260px}
+  @media(max-width:380px){.htie-date{font-size:9px}}
 
   /* Forecast panel cards */
   .fcast{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}
@@ -1005,18 +1011,6 @@ function realSlot(c, completed, live, opp){
   const cc   = code ? `<span class="poscode ${proj?'proj':''}">${code}</span>` : '';
   return `<div class="slot ${win?'win':(lose?'lose':'')} ${lead?'lead':''}">${cc}<span class="fl">${flag||''}</span><span class="nm">${name}</span>${sc}</div>`;
 }
-function realTie(ev, isFinal, label){
-  const comp = (ev.competitions && ev.competitions[0]) || {};
-  const cs   = comp.competitors || [];
-  const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
-  const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
-  const st   = (ev.status && ev.status.type) || {};
-  const completed = !!st.completed;
-  const live = st.state==='in';
-  const dstr = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  const liveTag = live ? `<span class="livetag">${st.shortDetail||'LIVE'}</span>` : '';
-  return `<div class="tie ${isFinal?'final-tie':''} ${live?'live':''}"><div class="tie-date">${label} · ${dstr}${liveTag}</div>${realSlot(home,completed,live,away)}${realSlot(away,completed,live,home)}</div>`;
-}
 function championOf(finEvents){
   const ev = (finEvents||[]).find(e=> e.status && e.status.type && e.status.type.completed);
   if(!ev) return '';
@@ -1026,24 +1020,44 @@ function championOf(finEvents){
   const flag = key ? fl[key] : ''; const name = key ? nm[key] : ((w.team&&w.team.displayName)||'');
   return `<div class="champ"><div class="cap">Чемпион</div><div class="who"><span class="fl">${flag}</span> ${name}</div></div>`;
 }
+// Горизонтальная пара реальной сетки (.htie) — дата/время внутри карточки,
+// счёт, проход и код позиции берутся из realSlot.
+function realHTie(ev, isFinal){
+  const comp = (ev.competitions && ev.competitions[0]) || {};
+  const cs   = comp.competitors || [];
+  const home = cs.find(c=>c.homeAway==='home') || cs[0] || {};
+  const away = cs.find(c=>c.homeAway==='away') || cs[1] || {};
+  const st   = (ev.status && ev.status.type) || {};
+  const completed = !!st.completed;
+  const live = st.state==='in';
+  const dstr = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const tag  = live ? `<span class="livetag">${st.shortDetail||'LIVE'}</span>` : '';
+  return `<div class="htie ${isFinal?'final-tie':''} ${live?'live':''}">` +
+         `<div class="htie-date">${dstr}${tag}</div>` +
+         `${realSlot(home,completed,live,away)}${realSlot(away,completed,live,home)}</div>`;
+}
 function renderRealBracket(ko){
-  const cols = [['R32','1/16 финала','1/16'],['R16','1/8 финала','1/8'],['QF','1/4 финала','1/4'],['SF','1/2 финала','1/2']];
-  let html = '';
-  cols.forEach(([k,title,short])=>{
+  const cols = [['R32','1/16','финала'],['R16','1/8','финала'],['QF','1/4','финала'],['SF','1/2','финала']];
+  let rounds = '';
+  cols.forEach(([k,title,sub])=>{
     const evs = (ko[k]||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-    if(!evs.length) return;
-    html += `<div class="round"><div class="round-title">${title}</div>${evs.map(ev=> realTie(ev,false,short)).join('')}</div>`;
+    const ties = evs.length ? evs.map(ev=> realHTie(ev,false)).join('')
+                            : `<div class="hempty">ещё не определены</div>`;
+    rounds += hround(title, sub, ties);
   });
-  // последняя секция: финал + чемпион + матч за 3-е место
-  const fin  = (ko['FIN']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-  const third= (ko['3RD']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-  if(fin.length || third.length){
-    let inner = fin.map(ev=> realTie(ev,true,'Финал')).join('') + championOf(fin);
-    if(third.length){
-      inner += `<div class="round-sub">Матч за 3-е место</div>` +
-               third.map(ev=> realTie(ev,false,'За 3-е')).join('');
-    }
-    html += `<div class="round"><div class="round-title">Финал</div>${inner}</div>`;
+  // колонка финала
+  const fin = (ko['FIN']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const finTies = fin.length ? fin.map(ev=> realHTie(ev,true)).join('')
+                             : `<div class="hempty">финал</div>`;
+  rounds += hround('Финал','19 июля', finTies);
+
+  let html = `<div class="hbracket">${rounds}<svg class="connlayer" aria-hidden="true"></svg></div>`;
+  html += championOf(fin);
+  // матч за 3-е место — отдельным блоком под деревом
+  const third = (ko['3RD']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+  if(third.length){
+    html += `<div class="thirdwrap"><div class="round-sub">Матч за 3-е место</div>` +
+            third.map(ev=> realHTie(ev,false)).join('') + `</div>`;
   }
   return html;
 }
@@ -1094,7 +1108,8 @@ function renderBracket(){
   const noteEl = document.getElementById('bracketNote');
   if(haveKO){
     document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
-    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN: дата и время каждого матча, счёт и проходы обновляются вживую. Каждый слот подписан кодом позиции (<b>1A</b> — победитель группы A, <b>2B</b> — 2-е место, <b>3C</b> — 3-е). Команды <b>подставляются «как есть»</b> из текущих таблиц — пунктирный код означает, что группа ещё доигрывается. <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3).';
+    requestAnimationFrame(drawProjConnectors);   // зелёные линии дерева и на реальной сетке
+    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN — горизонтальное дерево с соединительными линиями: дата, время, счёт и проходы обновляются вживую. Каждый слот подписан кодом позиции (<b>1A</b> — победитель группы A, <b>2B</b> — 2-е место, <b>3C</b> — 3-е) и <b>подставляется «как есть»</b> из текущих таблиц; пунктирный код — группа ещё доигрывается. Линии показывают, как раунды переходят друг в друга (1/16 → 1/8 → …). <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3).';
   }else{
     renderProjection();
     noteEl.innerHTML = 'Сетка собрана <b>«как есть»</b> из текущего положения в группах в реальном времени: <b>1A</b> — кто сейчас первый в группе A, <b>2B</b> — второй, <b>3C</b> — лучший третий. Победитель каждой пары спрогнозирован по силе сборных, пока матч не сыгран (пунктирный код — группа ещё не доиграна). Реальная сетка с датой и временем подхватится автоматически, как только ESPN поставит матчи в расписание.';
