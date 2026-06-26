@@ -895,10 +895,18 @@ function renderSchedule(){
   });
   matchList.innerHTML = html;
   hydrateWeather();   // подтягиваем погоду для будущих матчей
+  if(wantNearestScroll) requestAnimationFrame(scrollToNearest);  // авто-скролл при открытии вкладки
 }
+let wantNearestScroll = false;   // одноразовый авто-скролл к ближайшим при открытии «Матчей»
 function scrollToNearest(){
+  const panel = document.getElementById('matches');
   const el = document.getElementById('nearestMatch');
-  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  if(el && panel && panel.classList.contains('active')){
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    wantNearestScroll = false;   // проскроллили — больше не дёргаем при автообновлениях
+    return true;
+  }
+  return false;
 }
 
 // ---- СЕТКА ПЛЕЙ-ОФФ ИЗ ДАННЫХ ----
@@ -1556,7 +1564,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     // сетка могла отрисоваться, пока вкладка была скрыта — дорисуем линии
     if(t.dataset.p==='bracket') requestAnimationFrame(drawProjConnectors);
     if(t.dataset.p==='stats')   renderStats();
-    if(t.dataset.p==='matches') hydrateWeather();
+    if(t.dataset.p==='matches'){ hydrateWeather(); wantNearestScroll = true; requestAnimationFrame(scrollToNearest); }
   });
 });
 
