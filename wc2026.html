@@ -761,10 +761,23 @@ function setBar2(state, html){
 const evState = e => (e.status && e.status.type && e.status.type.state) || 'pre';
 const isToday = iso => { const d=new Date(iso), n=new Date();
   return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate(); };
+// Текущее место команды в своей группе → код позиции (1A / 2B / 3C…).
+// live=false, если группа ещё не играла (позиция по посеву — покажем пунктиром).
+function groupPosCode(key){
+  for(const [g,data] of Object.entries(groups)){
+    const i = data.rows.findIndex(r=> r[0]===key);
+    if(i>=0){ const p = data.rows[i][1]; return { code:(i+1)+g, live: p!=='–' && p!=='' }; }
+  }
+  return null;
+}
 function teamCell(team, away, lose, adv){
   team = team || {};
   let key = matchKey(team), flag='', name='', code='', proj=false;
-  if(key){ flag = fl[key]; name = nm[key]; }
+  if(key){
+    flag = fl[key]; name = nm[key];
+    const gp = groupPosCode(key);           // подписываем текущим местом в группе
+    if(gp){ code = gp.code; proj = !gp.live; }
+  }
   else {
     // плей-офф: вместо «Победитель группы I» / «3-е место (A/B/C/D/F)» подставляем
     // реальную команду из текущих таблиц групп — «как есть», в реальном времени
