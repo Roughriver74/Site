@@ -416,16 +416,16 @@
   </header>
 
   <div class="tabs">
-    <button class="tab active" data-p="groups">Группы</button>
+    <button class="tab" data-p="groups">Группы</button>
     <button class="tab" data-p="matches">Матчи</button>
     <button class="tab" data-p="qualify">Выходят</button>
-    <button class="tab" data-p="bracket">Плей-офф</button>
+    <button class="tab active" data-p="bracket">Плей-офф</button>
     <button class="tab" data-p="stats">Статистика</button>
     <button class="tab" data-p="forecast">Кто победит</button>
   </div>
 
   <!-- ===== GROUPS ===== -->
-  <section class="panel active" id="groups">
+  <section class="panel" id="groups">
     <div class="livebar" id="livebar">
       <span class="dot"></span>
       <span class="txt" id="liveText">Загрузка данных…</span>
@@ -465,7 +465,7 @@
   </section>
 
   <!-- ===== BRACKET ===== -->
-  <section class="panel" id="bracket">
+  <section class="panel active" id="bracket">
     <div class="legend"><span class="lg-q"><i></i>проходит дальше</span></div>
     <div class="bracket-scroll">
       <div class="bracket" id="bracketEl"></div>
