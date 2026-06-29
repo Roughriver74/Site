@@ -1101,6 +1101,11 @@ function championOf(finEvents){
 }
 // Горизонтальная пара реальной сетки (.htie) — дата/время внутри карточки,
 // счёт, проход и код позиции берутся из realSlot.
+// ключи реальных команд пары — чтобы соединять линии по реальному потоку
+function realTieKeys(ev){
+  const cs = (ev.competitions && ev.competitions[0] && ev.competitions[0].competitors) || [];
+  return cs.map(c=> matchKey((c&&c.team)||{})).filter(Boolean);
+}
 function realHTie(ev, isFinal){
   const comp = (ev.competitions && ev.competitions[0]) || {};
   const cs   = comp.competitors || [];
@@ -1111,7 +1116,7 @@ function realHTie(ev, isFinal){
   const live = st.state==='in';
   const dstr = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const tag  = live ? `<span class="livetag">${st.shortDetail||'LIVE'}</span>` : '';
-  return `<div class="htie ${isFinal?'final-tie':''} ${live?'live':''}">` +
+  return `<div class="htie ${isFinal?'final-tie':''} ${live?'live':''}" data-keys="${realTieKeys(ev).join(',')}">` +
          `<div class="htie-date">${dstr}${tag}</div>` +
          `${realSlot(home,completed,live,away)}${realSlot(away,completed,live,home)}</div>`;
 }
@@ -1364,7 +1369,15 @@ function drawProjConnectors(){
     const src = [...rounds[r].querySelectorAll('.htie')];
     const dst = [...rounds[r+1].querySelectorAll('.htie')];
     src.forEach((tie,i)=>{
-      const target = dst[Math.floor(i/2)];
+      // линия ведёт в тот матч следующего раунда, куда реально прошла команда
+      // этой пары; если матч ещё не сыгран — запасной вариант по позиции
+      const mk = (tie.dataset.keys||'').split(',').filter(Boolean);
+      let target = null;
+      if(mk.length) target = dst.find(t=>{
+        const dk = (t.dataset.keys||'').split(',').filter(Boolean);
+        return mk.some(k=> dk.includes(k));
+      });
+      if(!target) target = dst[Math.floor(i/2)];
       if(!target) return;
       const a = tie.getBoundingClientRect(), b = target.getBoundingClientRect();
       const x1 = a.right - br.left, y1 = a.top - br.top + a.height/2;
