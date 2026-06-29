@@ -1247,7 +1247,8 @@ function buildFixedModel(){
       else if(live){ const h=cs[0],aw=cs[1];
         if(h&&aw){const hs=+h.score,as=+aw.score; if(!isNaN(hs)&&!isNaN(as)&&hs!==as) winKey=matchKey((hs>as?h:aw).team);} }
     }
-    if(!winKey){ const w=projWinner(a,b); winKey=(w&&w.key)||null; }   // прогноз по силе, пока не сыграно
+    // только реальные данные: победитель — лишь по факту ESPN; прогнозов нет,
+    // несыгранные следующие раунды остаются пустыми, пока команды не сыграют
     return {a,b,winKey,date,live,completed,scA,scB};
   };
   const winOf  = t=> t?t.winKey:null;
@@ -1308,16 +1309,16 @@ function centerBracket(){
 function renderBracket(){
   const m = buildFixedModel();
   let html = renderFixedTwoSided(m);
-  if(m.champ){ const c = koTeamObj(m.champ);
-    html += `<div class="champ"><div class="cap">Чемпион${m.fin&&m.fin.completed?'':' · прогноз'}</div>` +
+  if(m.champ && m.fin && m.fin.completed){ const c = koTeamObj(m.champ);
+    html += `<div class="champ"><div class="cap">Чемпион</div>` +
             `<div class="who"><span class="fl">${c.flag}</span> ${c.name}</div></div>`; }
   html += `<div class="thirdwrap"><div class="round-sub">Матч за 3-е место</div>${bTie(m.third)}</div>`;
   document.getElementById('bracketEl').innerHTML = html;
   requestAnimationFrame(drawProjConnectors);
   if(!bracketCentered) requestAnimationFrame(()=>{ if(centerBracket()) bracketCentered = true; });
   document.getElementById('bracketNote').innerHTML = m.haveKO
-    ? 'Двусторонняя сетка ЧМ-2026 по официальному посеву: левая и правая половины сходятся к финалу по центру. Пары и проходы — <b>реальные из ESPN</b> (счёт, дата и лайв обновляются вживую). Победитель ещё не сыгранного матча показан прогнозом по силе (пунктирный код), пока команды не сыграют.'
-    : 'Двусторонняя сетка по официальному посеву ЧМ-2026. Реальные счёт и дата подхватятся с ESPN автоматически, как только начнутся матчи плей-офф.';
+    ? 'Двусторонняя сетка ЧМ-2026 по официальному посеву: левая и правая половины сходятся к финалу по центру. <b>Только реальные данные ESPN</b> — счёт, дата, лайв и проход по факту. Прогнозов нет: следующий раунд заполняется, только когда команда реально проходит дальше; до этого слот пустой.'
+    : 'Двусторонняя сетка по официальному посеву ЧМ-2026. Реальные счёт, дата и проходы подхватятся с ESPN автоматически, как только начнутся матчи плей-офф. Прогнозов нет — несыгранные слоты остаются пустыми.';
 }
 
 // ---- ЗАГРУЗКА ВСЕХ МАТЧЕЙ ----
