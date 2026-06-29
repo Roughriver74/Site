@@ -271,6 +271,16 @@
   .hempty{color:var(--muted);font-size:12px;text-align:center;padding:14px 8px;border:1px dashed var(--line);
     border-radius:10px;background:rgba(38,47,80,.18)}
   .connlayer{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
+  /* Двусторонняя сетка: 9 колонок, финал по центру выделен золотом */
+  .hbracket.two-sided{gap:16px}
+  .hbracket.two-sided .hround{min-width:132px}
+  .hbracket.two-sided .hround[data-side="F"]{min-width:150px;justify-content:center}
+  .hbracket.two-sided .hround[data-side="F"] .hround-head{color:var(--gold)}
+  @media(max-width:560px){
+    .hbracket.two-sided{gap:11px}
+    .hbracket.two-sided .hround{min-width:118px}
+    .hbracket.two-sided .hround[data-side="F"]{min-width:130px}
+  }
   .thirdwrap{margin-top:14px}
   .thirdwrap .htie{max-width:260px}
   @media(max-width:380px){.htie-date{font-size:9px}}
@@ -1177,22 +1187,167 @@ function renderQualifiers(){
     </div>`;
 }
 
-// ---- ДИСПЕТЧЕР СЕТКИ: реальная (если есть) или проекция ----
-function renderBracket(){
-  // берём реальные матчи плей-офф из ESPN — с датой и временем, даже если команды ещё TBD
-  assignedThirds = new Set();  // сброс: при каждом рендере заново распределяем 3-и места
-  const ko = {R32:[],R16:[],QF:[],SF:[],'3RD':[],FIN:[]};
-  let haveKO = false;
-  allEvents.forEach(ev=>{ const r = roundOf(ev); if(r){ ko[r].push(ev); haveKO = true; } });
-  const noteEl = document.getElementById('bracketNote');
-  if(haveKO){
-    document.getElementById('bracketEl').innerHTML = renderRealBracket(ko);
-    requestAnimationFrame(drawProjConnectors);   // зелёные линии дерева и на реальной сетке
-    noteEl.innerHTML = 'Реальная сетка плей-офф по данным ESPN — горизонтальное дерево с соединительными линиями: дата, время, счёт и проходы обновляются вживую. Каждый слот подписан кодом позиции (<b>1A</b> — победитель группы A, <b>2B</b> — 2-е место, <b>3C</b> — 3-е) и <b>подставляется «как есть»</b> из текущих таблиц; пунктирный код — группа ещё доигрывается. Линии показывают, как раунды переходят друг в друга (1/16 → 1/8 → …). <b>Время — в часовом поясе вашего устройства</b> (для СПб это UTC+3).';
-  }else{
-    renderProjection();
-    noteEl.innerHTML = 'Сетка собрана <b>«как есть»</b> из текущего положения в группах в реальном времени: <b>1A</b> — кто сейчас первый в группе A, <b>2B</b> — второй, <b>3C</b> — лучший третий. Победитель каждой пары спрогнозирован по силе сборных, пока матч не сыгран (пунктирный код — группа ещё не доиграна). Реальная сетка с датой и временем подхватится автоматически, как только ESPN поставит матчи в расписание.';
+// ============================================================
+//  ДВУСТОРОННЯЯ СЕТКА ПЛЕЙ-ОФФ
+//  Скелет — официальный посев (R32_SLOTS), как в проекции; поверх него
+//  накладываем реальные матчи ESPN (счёт, дату, лайв, фактического победителя).
+//  Левая (слоты 0–7) и правая (8–15) половины сходятся к финалу по центру.
+// ============================================================
+function koComps(ev){ return (ev.competitions && ev.competitions[0] && ev.competitions[0].competitors) || []; }
+// код места участника пары плей-офф (1A/2B) — без побочных эффектов
+function koCode(c){
+  c = c || {}; const team = c.team || {};
+  const key = matchKey(team);
+  if(key){ const gp = groupPosCode(key); return gp ? gp.code : null; }
+  const ab = (team.abbreviation || '').trim();
+  let m = ab.match(/^([12])([A-L])$/i);
+  if(m) return m[1] + m[2].toUpperCase();
+  const name = (team.displayName || '').trim();
+  m = name.match(/^group\s+([A-L])\s+(winner|2nd\s+place|runner-?up)/i);
+  if(m) return (/winner|1st/i.test(m[2]) ? '1' : '2') + m[1].toUpperCase();
+  return null;
+}
+// канонический индекс пары 1/16 по кодам мест (см. R32_SLOTS)
+function r32SlotIndex(ev){
+  const codes = koComps(ev).map(koCode).filter(Boolean);
+  for(let i=0;i<R32_SLOTS.length;i++){
+    const need = R32_SLOTS[i].map(s=> s.t==='W' ? '1'+s.g : s.t==='R' ? '2'+s.g : null).filter(Boolean);
+    if(need.length && need.every(c=> codes.includes(c))) return i;
   }
+  return -1;
+}
+// реальный матч раунда, где играет одна из ожидаемых команд пары
+function findEventByTeams(events, ka, kb){
+  if(!ka && !kb) return null;
+  return events.find(ev=>{
+    const ks = koComps(ev).map(c=> matchKey((c&&c.team)||{})).filter(Boolean);
+    return (ka && ks.includes(ka)) || (kb && ks.includes(kb));
+  }) || null;
+}
+// победитель пары: реальный (флаг ESPN / ведущий по ходу), иначе прогноз по силе
+function tieWinnerKey(a, b, ev){
+  if(ev){
+    const st = (ev.status && ev.status.type) || {};
+    const cs = koComps(ev);
+    if(st.completed){ const w = cs.find(c=> c.winner===true); const k = w && matchKey(w.team); if(k) return k; }
+    else if(st.state==='in' && cs[0] && cs[1]){
+      const hs=+cs[0].score, as=+cs[1].score;
+      if(!isNaN(hs)&&!isNaN(as)&&hs!==as){ const k=matchKey((hs>as?cs[0]:cs[1]).team); if(k) return k; }
+    }
+  }
+  const w = projWinner(a,b);
+  return w && w.key;
+}
+function winnerTeam(t){ if(!t) return null; if(t.a&&t.a.key===t.winKey) return t.a; if(t.b&&t.b.key===t.winKey) return t.b; return (t.a&&t.a.key)?t.a:t.b; }
+function loserTeam(t){  if(!t) return null; if(t.a&&t.a.key===t.winKey) return t.b; if(t.b&&t.b.key===t.winKey) return t.a; return t.b; }
+
+// Собираем модель сетки: канонический скелет + наложение реальных матчей.
+function buildBracketModel(){
+  const q = computeQualifiers();
+  const evByRound = {R32:[],R16:[],QF:[],SF:[],FIN:[],'3RD':[]};
+  allEvents.forEach(ev=>{ const r=roundOf(ev); if(r && evByRound[r]) evByRound[r].push(ev); });
+  const haveKO = allEvents.some(e=> roundOf(e));
+  // наложение 1/16 — по каноническому слоту (коды мест)
+  const map32 = {};
+  evByRound.R32.forEach(ev=>{ const i=r32SlotIndex(ev); if(i>=0 && map32[i]===undefined) map32[i]=ev; });
+
+  const mkTie = (a,b,ev)=>{
+    const winKey = tieWinnerKey(a,b,ev);
+    let date='', live=false, completed=false, scA=null, scB=null;
+    if(ev){
+      const st=(ev.status&&ev.status.type)||{};
+      live = st.state==='in'; completed = !!st.completed;
+      date = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      if(live||completed){
+        const byKey={}; koComps(ev).forEach(c=>{ const k=matchKey((c&&c.team)||{}); if(k) byKey[k]=c; });
+        if(a && byKey[a.key]) scA=byKey[a.key].score;
+        if(b && byKey[b.key]) scB=byKey[b.key].score;
+      }
+    }
+    return {a,b,winKey,date,live,completed,scA,scB};
+  };
+  const nextTies = (winners, evs)=>{
+    const ties=[];
+    for(let i=0;i<winners.length;i+=2){
+      const a=winners[i], b=winners[i+1];
+      ties.push(mkTie(a,b, findEventByTeams(evs, a&&a.key, b&&b.key)));
+    }
+    return ties;
+  };
+
+  const r32 = R32_SLOTS.map(([sa,sb],i)=> mkTie(projResolve(sa,q), projResolve(sb,q), map32[i]));
+  const r16 = nextTies(r32.map(winnerTeam), evByRound.R16);
+  const qf  = nextTies(r16.map(winnerTeam), evByRound.QF);
+  const sf  = nextTies(qf.map(winnerTeam),  evByRound.SF);
+  const fin = nextTies(sf.map(winnerTeam),  evByRound.FIN);
+  const sfLose = sf.map(loserTeam);
+  const third = mkTie(sfLose[0], sfLose[1], findEventByTeams(evByRound['3RD'], sfLose[0]&&sfLose[0].key, sfLose[1]&&sfLose[1].key));
+  return { r32,r16,qf,sf,fin,third, champ:winnerTeam(fin[0]), haveKO };
+}
+
+function bSlot(team, isWin, score){
+  team = team || {key:null,name:'—',flag:'',code:''};
+  const cc = team.code ? `<span class="poscode ${team.started?'':'proj'}">${team.code}</span>` : '';
+  const sc = (score!=null && score!=='') ? `<span class="sc">${score}</span>` : '';
+  return `<div class="slot ${isWin?'win':''} ${team.key?'':'tbd'}">${cc}` +
+         `<span class="fl">${team.flag||''}</span><span class="nm">${team.name||'—'}</span>${sc}</div>`;
+}
+function bTie(t, isFinal){
+  if(!t) return `<div class="hempty">—</div>`;
+  const aWin = t.a && t.a.key===t.winKey, bWin = t.b && t.b.key===t.winKey;
+  const dline = t.date ? `<div class="htie-date">${t.date}${t.live?`<span class="livetag">LIVE</span>`:''}</div>` : '';
+  return `<div class="htie ${isFinal?'final-tie':''} ${t.live?'live':''}">` +
+         dline + bSlot(t.a,aWin,t.scA) + bSlot(t.b,bWin,t.scB) + `</div>`;
+}
+function hcol(title, sub, ties, side, col){
+  const s = sub ? `<span class="hrd">${sub}</span>` : '';
+  const body = ties.length ? ties.join('') : `<div class="hempty">—</div>`;
+  return `<div class="hround" data-col="${col}" data-side="${side}">` +
+         `<div class="hround-head">${title}${s}</div><div class="hstack">${body}</div></div>`;
+}
+function renderTwoSided(m){
+  const D = koWindows();
+  const T = arr => arr.map(t=> bTie(t,false));
+  const cols =
+    hcol('1/16','финала · '+D.R32, T(m.r32.slice(0,8)),  'L',0) +
+    hcol('1/8','финала · '+D.R16,  T(m.r16.slice(0,4)),  'L',1) +
+    hcol('1/4','финала · '+D.QF,   T(m.qf.slice(0,2)),   'L',2) +
+    hcol('1/2','финала · '+D.SF,   T(m.sf.slice(0,1)),   'L',3) +
+    hcol('Финал', D.FIN,           [bTie(m.fin[0],true)],'F',4) +
+    hcol('1/2','финала · '+D.SF,   T(m.sf.slice(1,2)),   'R',5) +
+    hcol('1/4','финала · '+D.QF,   T(m.qf.slice(2,4)),   'R',6) +
+    hcol('1/8','финала · '+D.R16,  T(m.r16.slice(4,8)),  'R',7) +
+    hcol('1/16','финала · '+D.R32, T(m.r32.slice(8,16)), 'R',8);
+  return `<div class="hbracket two-sided">${cols}<svg class="connlayer" aria-hidden="true"></svg></div>`;
+}
+// центрируем прокрутку на финале — один раз при первом показе вкладки
+let bracketCentered = false;
+function centerBracket(){
+  const sc = document.querySelector('.bracket-scroll');
+  const br = document.querySelector('#bracketEl .hbracket');
+  if(!sc || !br) return false;
+  const fin = br.querySelector('[data-col="4"]'); if(!fin) return false;
+  const fr = fin.getBoundingClientRect(), sr = sc.getBoundingClientRect();
+  if(sr.width < 20) return false;   // панель скрыта
+  sc.scrollLeft += (fr.left + fr.width/2) - (sr.left + sr.width/2);
+  return true;
+}
+
+function renderBracket(){
+  assignedThirds = new Set();
+  const m = buildBracketModel();
+  let html = renderTwoSided(m);
+  if(m.champ && m.champ.key){
+    html += `<div class="champ"><div class="cap">Чемпион${m.fin[0]&&m.fin[0].completed?'':' · как есть'}</div>` +
+            `<div class="who"><span class="fl">${m.champ.flag||''}</span> ${m.champ.name}</div></div>`;
+  }
+  html += `<div class="thirdwrap"><div class="round-sub">Матч за 3-е место</div>${bTie(m.third,false)}</div>`;
+  document.getElementById('bracketEl').innerHTML = html;
+  requestAnimationFrame(drawProjConnectors);
+  if(!bracketCentered) requestAnimationFrame(()=>{ if(centerBracket()) bracketCentered = true; });
+  document.getElementById('bracketNote').innerHTML = m.haveKO
+    ? 'Двусторонняя сетка: левая и правая половины сходятся к финалу по центру. Скелет — официальный посев; <b>счёт, дата и проход берутся из ESPN вживую</b>. Команды в 1/16 подставлены «как есть» из текущих таблиц (код <b>1A/2B/3C</b>; пунктир — группа ещё доигрывается). <b>Время — в часовом поясе устройства.</b>'
+    : 'Двусторонняя сетка «как есть»: состав 1/16 — из текущего положения в группах, победители пар спрогнозированы по силе сборных (пунктирный код — группа ещё не доиграна). Реальные дата и счёт подхватятся с ESPN автоматически.';
 }
 
 // ---- ЗАГРУЗКА ВСЕХ МАТЧЕЙ ----
@@ -1358,21 +1513,31 @@ function drawProjConnectors(){
   svg.setAttribute('width', br.width);
   svg.setAttribute('height', br.height);
   svg.setAttribute('viewBox', `0 0 ${br.width} ${br.height}`);
-  const rounds = [...bracket.querySelectorAll('.hround')];
+  const byCol = {};
+  bracket.querySelectorAll('.hround').forEach(c=> byCol[c.dataset.col] = c);
+  const ties = c => c ? [...c.querySelectorAll('.htie')] : [];
   let d = '';
-  for(let r=0; r<rounds.length-1; r++){
-    const src = [...rounds[r].querySelectorAll('.htie')];
-    const dst = [...rounds[r+1].querySelectorAll('.htie')];
+  // dir='R': линия идёт вправо (правый край пары → левый край цели);
+  // dir='L': влево (левый край пары → правый край цели) — для правой половины
+  const connect = (srcCol, dstCol, dir)=>{
+    const src = ties(srcCol), dst = ties(dstCol);
     src.forEach((tie,i)=>{
       const target = dst[Math.floor(i/2)];
       if(!target) return;
       const a = tie.getBoundingClientRect(), b = target.getBoundingClientRect();
-      const x1 = a.right - br.left, y1 = a.top - br.top + a.height/2;
-      const x2 = b.left  - br.left, y2 = b.top - br.top + b.height/2;
+      const x1 = (dir==='R' ? a.right : a.left) - br.left;
+      const x2 = (dir==='R' ? b.left  : b.right) - br.left;
+      const y1 = a.top - br.top + a.height/2, y2 = b.top - br.top + b.height/2;
       const mx = x1 + (x2 - x1)/2;
       d += `M${x1} ${y1} H${mx} V${y2} H${x2} `;
     });
-  }
+  };
+  // левая половина сходится вправо к финалу
+  connect(byCol[0],byCol[1],'R'); connect(byCol[1],byCol[2],'R');
+  connect(byCol[2],byCol[3],'R'); connect(byCol[3],byCol[4],'R');
+  // правая половина сходится влево к финалу
+  connect(byCol[8],byCol[7],'L'); connect(byCol[7],byCol[6],'L');
+  connect(byCol[6],byCol[5],'L'); connect(byCol[5],byCol[4],'L');
   svg.innerHTML = `<path d="${d}" fill="none" stroke="rgba(34,196,119,.45)" stroke-width="2"/>`;
 }
 let _connRAF = 0;
@@ -1562,7 +1727,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     t.classList.add('active');
     document.getElementById(t.dataset.p).classList.add('active');
     // сетка могла отрисоваться, пока вкладка была скрыта — дорисуем линии
-    if(t.dataset.p==='bracket') requestAnimationFrame(drawProjConnectors);
+    if(t.dataset.p==='bracket') requestAnimationFrame(()=>{ drawProjConnectors(); if(!bracketCentered && centerBracket()) bracketCentered = true; });
     if(t.dataset.p==='stats')   renderStats();
     if(t.dataset.p==='matches'){ hydrateWeather(); wantNearestScroll = true; requestAnimationFrame(scrollToNearest); }
   });
@@ -1571,7 +1736,7 @@ document.querySelectorAll('.tab').forEach(t=>{
 // ---- INIT ----
 renderGroups();
 renderQualifiers();
-renderProjection();
+renderBracket();
 renderStats();
 refresh();
 refreshEvents();
