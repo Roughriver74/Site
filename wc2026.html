@@ -1111,72 +1111,21 @@ function realHTie(ev, isFinal){
   const live = st.state==='in';
   const dstr = new Date(ev.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const tag  = live ? `<span class="livetag">${st.shortDetail||'LIVE'}</span>` : '';
-  return `<div class="htie ${isFinal?'final-tie':''} ${live?'live':''}" data-keys="${koRealKeys(ev).join(',')}">` +
+  return `<div class="htie ${isFinal?'final-tie':''} ${live?'live':''}">` +
          `<div class="htie-date">${dstr}${tag}</div>` +
          `${realSlot(home,completed,live,away)}${realSlot(away,completed,live,home)}</div>`;
 }
-// ---- ПОРЯДОК ПАР ПЛЕЙ-ОФФ: по реальной сетке, а не по дате ----
-// Без этого соседние по дате пары ошибочно «сходятся» в один матч следующего
-// раунда. Здесь все функции без побочных эффектов (третьи места не распределяем).
-function koComps(ev){ return (ev.competitions && ev.competitions[0] && ev.competitions[0].competitors) || []; }
-// ключи реальных команд в паре (placeholder-слоты дают null и отбрасываются)
-function koRealKeys(ev){ return koComps(ev).map(c=> matchKey((c&&c.team)||{})).filter(Boolean); }
-// код позиции слота (1A/2B) для победителей/вторых мест — для канонического порядка 1/16
-function koCode(c){
-  c = c || {}; const team = c.team || {};
-  const key = matchKey(team);
-  if(key){ const gp = groupPosCode(key); return gp ? gp.code : null; }
-  const ab = (team.abbreviation || '').trim();
-  let m = ab.match(/^([12])([A-L])$/i);
-  if(m) return m[1] + m[2].toUpperCase();
-  const name = (team.displayName || '').trim();
-  m = name.match(/^group\s+([A-L])\s+(winner|2nd\s+place|runner-?up)/i);
-  if(m) return (/winner|1st/i.test(m[2]) ? '1' : '2') + m[1].toUpperCase();
-  return null;   // третьи места не дают однозначного кода — порядок добьём датой
-}
-// канонический индекс пары 1/16 по кодам мест её участников (см. R32_SLOTS)
-function r32SlotIndex(ev){
-  const codes = koComps(ev).map(koCode).filter(Boolean);
-  for(let i=0;i<R32_SLOTS.length;i++){
-    const need = R32_SLOTS[i].map(s=> s.t==='W' ? '1'+s.g : s.t==='R' ? '2'+s.g : null).filter(Boolean);
-    if(need.length && need.every(c=> codes.includes(c))) return i;
-  }
-  return -1;
-}
-// упорядочить раунды так, чтобы пары стояли под своими «родителями»
-function orderedKO(ko){
-  const byDate = arr => (arr||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-  // 1/16 — по канонической сетке (коды мест); неопознанные пары — по дате в конец
-  const r32 = (ko.R32||[]).slice().sort((a,b)=>{
-    const A = r32SlotIndex(a), B = r32SlotIndex(b);
-    return (A<0?99:A) - (B<0?99:B) || (new Date(a.date)-new Date(b.date));
-  });
-  // следующий раунд: ставим пару под ту пару прошлого раунда, чья команда в неё прошла
-  const follow = (src, dst)=>{
-    const srcKeys = src.map(koRealKeys);
-    return byDate(dst).map(ev=>{
-      const keys = koRealKeys(ev); let best = Infinity;
-      srcKeys.forEach((sk,si)=>{ if(sk.some(k=> keys.includes(k))) best = Math.min(best, si); });
-      return { ev, best, d:new Date(ev.date) };
-    }).sort((a,b)=> a.best-b.best || a.d-b.d).map(x=> x.ev);
-  };
-  const r16 = follow(r32, ko.R16||[]);
-  const qf  = follow(r16, ko.QF||[]);
-  const sf  = follow(qf,  ko.SF||[]);
-  return { R32:r32, R16:r16, QF:qf, SF:sf, '3RD':byDate(ko['3RD']), FIN:byDate(ko.FIN) };
-}
 function renderRealBracket(ko){
-  const ord = orderedKO(ko);
   const cols = [['R32','1/16','финала'],['R16','1/8','финала'],['QF','1/4','финала'],['SF','1/2','финала']];
   let rounds = '';
   cols.forEach(([k,title,sub])=>{
-    const evs = ord[k] || [];
+    const evs = (ko[k]||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
     const ties = evs.length ? evs.map(ev=> realHTie(ev,false)).join('')
                             : `<div class="hempty">ещё не определены</div>`;
     rounds += hround(title, sub, ties);
   });
   // колонка финала
-  const fin = ord.FIN || [];
+  const fin = (ko['FIN']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
   const finTies = fin.length ? fin.map(ev=> realHTie(ev,true)).join('')
                              : `<div class="hempty">финал</div>`;
   rounds += hround('Финал','19 июля', finTies);
@@ -1184,7 +1133,7 @@ function renderRealBracket(ko){
   let html = `<div class="hbracket">${rounds}<svg class="connlayer" aria-hidden="true"></svg></div>`;
   html += championOf(fin);
   // матч за 3-е место — отдельным блоком под деревом
-  const third = ord['3RD'] || [];
+  const third = (ko['3RD']||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
   if(third.length){
     html += `<div class="thirdwrap"><div class="round-sub">Матч за 3-е место</div>` +
             third.map(ev=> realHTie(ev,false)).join('') + `</div>`;
@@ -1352,8 +1301,7 @@ function projSlot(team, isWin){
 }
 function htie(a,b,isFinal){
   const w = projWinner(a,b);
-  const keys = [a&&a.key, b&&b.key].filter(Boolean).join(',');
-  return `<div class="htie ${isFinal?'final-tie':''}" data-keys="${keys}">${projSlot(a, w===a)}${projSlot(b, w===b)}</div>`;
+  return `<div class="htie ${isFinal?'final-tie':''}">${projSlot(a, w===a)}${projSlot(b, w===b)}</div>`;
 }
 function hround(title, sub, tiesHtml){
   const s = sub ? `<span class="hrd">${sub}</span>` : '';
@@ -1416,15 +1364,7 @@ function drawProjConnectors(){
     const src = [...rounds[r].querySelectorAll('.htie')];
     const dst = [...rounds[r+1].querySelectorAll('.htie')];
     src.forEach((tie,i)=>{
-      // связываем по реальному потоку: ищем пару следующего раунда, куда прошла
-      // команда из этой пары; если не нашли (раунд ещё не сыгран) — по позиции
-      const myKeys = (tie.dataset.keys||'').split(',').filter(Boolean);
-      let target = null;
-      if(myKeys.length) target = dst.find(t=>{
-        const dk = (t.dataset.keys||'').split(',').filter(Boolean);
-        return myKeys.some(k=> dk.includes(k));
-      });
-      if(!target) target = dst[Math.floor(i/2)];
+      const target = dst[Math.floor(i/2)];
       if(!target) return;
       const a = tie.getBoundingClientRect(), b = target.getBoundingClientRect();
       const x1 = a.right - br.left, y1 = a.top - br.top + a.height/2;
