@@ -276,6 +276,12 @@
   .hbracket.two-sided .hround{min-width:132px}
   .hbracket.two-sided .hround[data-side="F"]{min-width:150px;justify-content:center}
   .hbracket.two-sided .hround[data-side="F"] .hround-head{color:var(--gold)}
+  /* прогнозные команды — светло-розовый фон (отличаем от реальных результатов) */
+  .slot.proj-pick{background:linear-gradient(90deg,rgba(255,140,196,.20),rgba(255,140,196,.07))}
+  .slot.proj-pick .nm{color:#ffcbe4;font-weight:600}
+  .slot.proj-pick .poscode{color:#ff9ecb;border-color:rgba(255,140,196,.4)}
+  .champ.proj-champ{background:rgba(255,140,196,.08);border-color:rgba(255,140,196,.3)}
+  .champ.proj-champ .cap{color:#ff9ecb}
   @media(max-width:560px){
     .hbracket.two-sided{gap:11px}
     .hbracket.two-sided .hround{min-width:118px}
@@ -1231,10 +1237,13 @@ function buildFixedModel(){
       .map(c=>matchKey((c&&c.team)||{})).filter(Boolean);
     return (ka&&ks.includes(ka))||(kb&&ks.includes(kb));
   })||null;
-  const mkTie = (ka,kb,evs)=>{
+  const mkTie = (A,B,evs)=>{
+    A=A||{}; B=B||{};
+    const ka=A.key||null, kb=B.key||null;
     const a=koTeamObj(ka), b=koTeamObj(kb);
+    a.proj=!!A.proj; b.proj=!!B.proj;   // пришла ли команда в пару прогнозом
     const ev=findEv(evs,ka,kb);
-    let winKey=null, date='', live=false, completed=false, scA=null, scB=null;
+    let winKey=null, winProj=false, date='', live=false, completed=false, scA=null, scB=null;
     if(ev){
       const st=(ev.status&&ev.status.type)||{};
       live=st.state==='in'; completed=!!st.completed;
@@ -1247,33 +1256,43 @@ function buildFixedModel(){
       else if(live){ const h=cs[0],aw=cs[1];
         if(h&&aw){const hs=+h.score,as=+aw.score; if(!isNaN(hs)&&!isNaN(as)&&hs!==as) winKey=matchKey((hs>as?h:aw).team);} }
     }
-    // только реальные данные: победитель — лишь по факту ESPN; прогнозов нет,
-    // несыгранные следующие раунды остаются пустыми, пока команды не сыграют
-    return {a,b,winKey,date,live,completed,scA,scB};
+    // победитель по факту ESPN; если матч не сыгран — прогноз по силе (winProj),
+    // он подсвечивается розовым и протягивается по дереву как «прогнозный»
+    if(!winKey){ const w=projWinner(a,b); winKey=(w&&w.key)||null; winProj=true; }
+    return {a,b,winKey,winProj,date,live,completed,scA,scB};
   };
-  const winOf  = t=> t?t.winKey:null;
-  const loseOf = t=> t? (t.a.key===t.winKey ? t.b.key : (t.b.key===t.winKey ? t.a.key : t.b.key)) : null;
+  // победитель/проигравший как {key, proj}: proj=true, если проход — прогноз
+  const winOf  = t=>{ if(!t||!t.winKey) return {key:null,proj:false};
+    return {key:t.winKey, proj: t.winProj || (t.a.key===t.winKey ? t.a.proj : t.b.proj)}; };
+  const loseOf = t=>{ if(!t||!t.winKey) return {key:null,proj:false};
+    const lo = (t.a.key===t.winKey) ? t.b : t.a;
+    return {key:lo.key, proj: t.winProj || lo.proj}; };
 
-  const r32={}; for(let i=1;i<=16;i++){ const [ka,kb]=KO_R32[i]; r32[i]=mkTie(ka,kb,evByRound.R32); }
+  const r32={}; for(let i=1;i<=16;i++){ const [ka,kb]=KO_R32[i]; r32[i]=mkTie({key:ka},{key:kb},evByRound.R32); }
   const r16={}; for(const m in KO_R16){ const [i,j]=KO_R16[m]; r16[m]=mkTie(winOf(r32[i]),winOf(r32[j]),evByRound.R16); }
   const qf ={}; for(const m in KO_QF){  const [i,j]=KO_QF[m];  qf[m] =mkTie(winOf(r16[i]),winOf(r16[j]),evByRound.QF); }
   const sf ={}; for(const m in KO_SF){  const [i,j]=KO_SF[m];  sf[m] =mkTie(winOf(qf[i]),winOf(qf[j]),evByRound.SF); }
   const fin  = mkTie(winOf(sf[101]), winOf(sf[102]), evByRound.FIN);
   const third= mkTie(loseOf(sf[101]),loseOf(sf[102]),evByRound['3RD']);
-  return {r32,r16,qf,sf,fin,third, champ:winOf(fin), haveKO:allEvents.some(e=>roundOf(e))};
+  const champW = winOf(fin);
+  return {r32,r16,qf,sf,fin,third, champ:champW.key, champProj:champW.proj, haveKO:allEvents.some(e=>roundOf(e))};
 }
-function bSlot(team, isWin, score){
+function bSlot(team, isWin, score, pink){
   team = team || {};
   const cc = team.code ? `<span class="poscode ${team.started?'':'proj'}">${team.code}</span>` : '';
   const sc = (score!=null && score!=='') ? `<span class="sc">${score}</span>` : '';
-  return `<div class="slot ${isWin?'win':''} ${team.key?'':'tbd'}">${cc}` +
+  return `<div class="slot ${isWin?'win':''} ${pink?'proj-pick':''} ${team.key?'':'tbd'}">${cc}` +
          `<span class="fl">${team.flag||''}</span><span class="nm">${team.name||'—'}</span>${sc}</div>`;
 }
 function bTie(t, isFinal){
   if(!t) return `<div class="hempty">—</div>`;
-  const aw = t.a&&t.a.key===t.winKey, bw = t.b&&t.b.key===t.winKey;
+  const aw = !!(t.a&&t.a.key&&t.a.key===t.winKey), bw = !!(t.b&&t.b.key&&t.b.key===t.winKey);
+  // розовым — прогнозная команда: либо пришла прогнозом, либо прогнозный победитель
+  const aPink = (t.a&&t.a.proj) || (aw && t.winProj);
+  const bPink = (t.b&&t.b.proj) || (bw && t.winProj);
   const dl = t.date ? `<div class="htie-date">${t.date}${t.live?`<span class="livetag">LIVE</span>`:''}</div>` : '';
-  return `<div class="htie ${isFinal?'final-tie':''} ${t.live?'live':''}">${dl}${bSlot(t.a,aw,t.scA)}${bSlot(t.b,bw,t.scB)}</div>`;
+  return `<div class="htie ${isFinal?'final-tie':''} ${t.live?'live':''}">${dl}` +
+         `${bSlot(t.a, aw&&!aPink, t.scA, aPink)}${bSlot(t.b, bw&&!bPink, t.scB, bPink)}</div>`;
 }
 function hcol(title, sub, ties, side, col){
   const s = sub ? `<span class="hrd">${sub}</span>` : '';
@@ -1309,16 +1328,16 @@ function centerBracket(){
 function renderBracket(){
   const m = buildFixedModel();
   let html = renderFixedTwoSided(m);
-  if(m.champ && m.fin && m.fin.completed){ const c = koTeamObj(m.champ);
-    html += `<div class="champ"><div class="cap">Чемпион</div>` +
+  if(m.champ){ const c = koTeamObj(m.champ);
+    html += `<div class="champ ${m.champProj?'proj-champ':''}"><div class="cap">Чемпион${m.champProj?' · прогноз':''}</div>` +
             `<div class="who"><span class="fl">${c.flag}</span> ${c.name}</div></div>`; }
   html += `<div class="thirdwrap"><div class="round-sub">Матч за 3-е место</div>${bTie(m.third)}</div>`;
   document.getElementById('bracketEl').innerHTML = html;
   requestAnimationFrame(drawProjConnectors);
   if(!bracketCentered) requestAnimationFrame(()=>{ if(centerBracket()) bracketCentered = true; });
   document.getElementById('bracketNote').innerHTML = m.haveKO
-    ? 'Двусторонняя сетка ЧМ-2026 по официальному посеву: левая и правая половины сходятся к финалу по центру. <b>Только реальные данные ESPN</b> — счёт, дата, лайв и проход по факту. Прогнозов нет: следующий раунд заполняется, только когда команда реально проходит дальше; до этого слот пустой.'
-    : 'Двусторонняя сетка по официальному посеву ЧМ-2026. Реальные счёт, дата и проходы подхватятся с ESPN автоматически, как только начнутся матчи плей-офф. Прогнозов нет — несыгранные слоты остаются пустыми.';
+    ? 'Двусторонняя сетка ЧМ-2026 по официальному посеву: левая и правая половины сходятся к финалу по центру. Реальные результаты ESPN (счёт, дата, лайв, проход) — обычным фоном; <b style="color:#ff9ecb">прогнозные команды</b> (кто пройдёт по силе, пока матч не сыгран) — <b style="color:#ff9ecb">светло-розовым</b>. Как только команда реально проходит — розовая подсветка снимается.'
+    : 'Двусторонняя сетка по официальному посеву ЧМ-2026. Прогнозные проходы подсвечены <b style="color:#ff9ecb">розовым</b>; реальные счёт и дата подхватятся с ESPN, как только начнутся матчи.';
 }
 
 // ---- ЗАГРУЗКА ВСЕХ МАТЧЕЙ ----
