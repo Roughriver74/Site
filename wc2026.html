@@ -1287,12 +1287,17 @@ function bSlot(team, isWin, score, pink){
 function bTie(t, isFinal){
   if(!t) return `<div class="hempty">—</div>`;
   const aw = !!(t.a&&t.a.key&&t.a.key===t.winKey), bw = !!(t.b&&t.b.key&&t.b.key===t.winKey);
-  // розовым — прогнозная команда: либо пришла прогнозом, либо прогнозный победитель
-  const aPink = (t.a&&t.a.proj) || (aw && t.winProj);
-  const bPink = (t.b&&t.b.proj) || (bw && t.winProj);
+  // розовым — только если сама команда попала в слот прогнозом (мы угадали проход).
+  // Реального участника несыгранного матча НЕ красим, даже если он прогнозный
+  // победитель этой пары — прогноз увидим уже в следующем раунде.
+  const aPink = !!(t.a && t.a.proj);
+  const bPink = !!(t.b && t.b.proj);
+  // зелёным — только реальный победитель (по факту ESPN), не прогноз
+  const aGreen = aw && !t.winProj && !aPink;
+  const bGreen = bw && !t.winProj && !bPink;
   const dl = t.date ? `<div class="htie-date">${t.date}${t.live?`<span class="livetag">LIVE</span>`:''}</div>` : '';
   return `<div class="htie ${isFinal?'final-tie':''} ${t.live?'live':''}">${dl}` +
-         `${bSlot(t.a, aw&&!aPink, t.scA, aPink)}${bSlot(t.b, bw&&!bPink, t.scB, bPink)}</div>`;
+         `${bSlot(t.a, aGreen, t.scA, aPink)}${bSlot(t.b, bGreen, t.scB, bPink)}</div>`;
 }
 function hcol(title, sub, ties, side, col){
   const s = sub ? `<span class="hrd">${sub}</span>` : '';
